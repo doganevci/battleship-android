@@ -10,8 +10,24 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="com.dogan.amiral.MainActivity">
 
-    <TextView
+    <EditText
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Hello World!" />
+        android:inputType="textPersonName"
+        android:ems="10"
+        android:id="@+id/iptxt"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="207dp"
+        style="@style/Widget.AppCompat.EditText"
+        android:hint="IP Number" />
+
+    <Button
+        android:text="Connect"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/iptxt"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="31dp"
+        android:id="@+id/button" />
 </RelativeLayout>
