@@ -2,21 +2,27 @@ package com.dogan.amiral;
 
 import android.content.Intent;
 import android.net.Uri;
+import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.format.Formatter;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 
 import com.google.android.gms.appindexing.Action;
 import com.google.android.gms.appindexing.AppIndex;
 import com.google.android.gms.appindexing.Thing;
 import com.google.android.gms.common.api.GoogleApiClient;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.net.InetAddress;
@@ -24,8 +30,11 @@ import java.net.NetworkInterface;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.net.URL;
 import java.net.UnknownHostException;
+import java.util.Collections;
 import java.util.Enumeration;
+import java.util.List;
 
 import static android.R.id.message;
 
@@ -34,6 +43,13 @@ public class MainActivity extends AppCompatActivity {
     EditText ipTxt;
     String message = "";
     ServerSocket serverSocket;
+    TextView txtYourIp;
+    Button btnBeServer;
+
+    String PORT="65123";
+
+
+    TextView txtServerLog;
 
 
     @Override
@@ -41,30 +57,47 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         ipTxt = (EditText) findViewById(R.id.iptxt);
+        txtYourIp = (TextView) findViewById(R.id.txtYourIp);
+        btnBeServer=(Button) findViewById(R.id.btnBeServer);
 
+        txtYourIp.setText("Your Ip Adress: "+getIPAddress(true));
 
         Button btn = (Button) findViewById(R.id.button);
         btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+
+                Log.i("Connecting::","connect request to a friend");
+
                 Intent i = new Intent(getApplicationContext(), amiralMainActivity.class);
                 i.putExtra("txtIp", ipTxt.getText().toString());
 
-               // startActivity(i);
+                // startActivity(i);
 
-                MyClientTask myClientTask = new MyClientTask("",
-                        Integer.parseInt(""));
+                MyClientTask myClientTask = new MyClientTask(ipTxt.getText().toString(),
+                        Integer.parseInt(PORT));
                 myClientTask.execute();
             }
         });
 
 
 
-        Thread socketServerThread = new Thread(new SocketServerThread());
-        socketServerThread.start();
+
+
+        btnBeServer.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Log.i("Waiting::","waiting request from a friend");
+
+
+                Thread socketServerThread = new Thread(new SocketServerThread());
+                socketServerThread.start();
+
+            }
+        });
+
 
     }
-
 
 
 
@@ -124,6 +157,7 @@ public class MainActivity extends AppCompatActivity {
         @Override
         protected void onPostExecute(Void result) {
 
+            btnBeServer.setText(response);
             super.onPostExecute(result);
         }
 
@@ -135,11 +169,9 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-
-
     private class SocketServerThread extends Thread {
 
-        static final int SocketServerPORT = 8080;
+         int SocketServerPORT = Integer.parseInt(PORT);
         int count = 0;
 
         @Override
@@ -150,7 +182,7 @@ public class MainActivity extends AppCompatActivity {
 
                     @Override
                     public void run() {
-                      //  info.setText("I'm waiting here: "+ serverSocket.getLocalPort());
+                        txtServerLog.setText("I'm waiting here: "+ serverSocket.getLocalPort());
                     }
                 });
 
@@ -164,7 +196,7 @@ public class MainActivity extends AppCompatActivity {
 
                         @Override
                         public void run() {
-                           // msg.setText(message);
+                            txtServerLog.setText(message);
                         }
                     });
 
@@ -202,65 +234,61 @@ public class MainActivity extends AppCompatActivity {
                 printStream.print(msgReply);
                 printStream.close();
 
-                //message += "replayed: " + msgReply + "\n";
+                message += "replayed: " + msgReply + "\n";
 
                 MainActivity.this.runOnUiThread(new Runnable() {
 
                     @Override
                     public void run() {
-                     //   msg.setText(message);
+                        txtServerLog.setText(message);
                     }
                 });
 
             } catch (IOException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
-                //message += "Something wrong! " + e.toString() + "\n";
+                message += "Something wrong! " + e.toString() + "\n";
             }
 
             MainActivity.this.runOnUiThread(new Runnable() {
 
                 @Override
                 public void run() {
-                   // msg.setText(message);
+                    txtServerLog.setText(message);
                 }
             });
         }
 
     }
 
-    private String getIpAddress() {
-        String ip = "";
+
+
+
+    public static String getIPAddress(boolean useIPv4) {
         try {
-            Enumeration<NetworkInterface> enumNetworkInterfaces = NetworkInterface
-                    .getNetworkInterfaces();
-            while (enumNetworkInterfaces.hasMoreElements()) {
-                NetworkInterface networkInterface = enumNetworkInterfaces
-                        .nextElement();
-                Enumeration<InetAddress> enumInetAddress = networkInterface
-                        .getInetAddresses();
-                while (enumInetAddress.hasMoreElements()) {
-                    InetAddress inetAddress = enumInetAddress.nextElement();
+            List<NetworkInterface> interfaces = Collections.list(NetworkInterface.getNetworkInterfaces());
+            for (NetworkInterface intf : interfaces) {
+                List<InetAddress> addrs = Collections.list(intf.getInetAddresses());
+                for (InetAddress addr : addrs) {
+                    if (!addr.isLoopbackAddress()) {
+                        String sAddr = addr.getHostAddress();
+                        //boolean isIPv4 = InetAddressUtils.isIPv4Address(sAddr);
+                        boolean isIPv4 = sAddr.indexOf(':')<0;
 
-                    if (inetAddress.isSiteLocalAddress()) {
-                        ip += "SiteLocalAddress: "
-                                + inetAddress.getHostAddress() + "\n";
+                        if (useIPv4) {
+                            if (isIPv4)
+                                return sAddr;
+                        } else {
+                            if (!isIPv4) {
+                                int delim = sAddr.indexOf('%'); // drop ip6 zone suffix
+                                return delim<0 ? sAddr.toUpperCase() : sAddr.substring(0, delim).toUpperCase();
+                            }
+                        }
                     }
-
                 }
-
             }
-
-        } catch (SocketException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            ip += "Something Wrong! " + e.toString() + "\n";
-        }
-
-        return ip;
+        } catch (Exception ex) { } // for now eat exceptions
+        return "";
     }
-
-
-
 
 }
