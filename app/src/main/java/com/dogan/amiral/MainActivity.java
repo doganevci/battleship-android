@@ -12,6 +12,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.appindexing.Action;
 import com.google.android.gms.appindexing.AppIndex;
@@ -20,6 +21,8 @@ import com.google.android.gms.common.api.GoogleApiClient;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -32,6 +35,7 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
@@ -42,9 +46,12 @@ public class MainActivity extends AppCompatActivity {
 
     EditText ipTxt;
     String message = "";
-    ServerSocket serverSocket;
+
     TextView txtYourIp;
     Button btnBeServer;
+    Button btnMessageSend;
+    Button btnConnectToFriend;
+    EditText txtMessageSend;
 
     String PORT="65123";
 
@@ -52,18 +59,38 @@ public class MainActivity extends AppCompatActivity {
     TextView txtServerLog;
 
 
+    boolean isConnected=false;
+    boolean isServer=false;
+    public static Socket theConnectedSocket;
+    public static ServerSocket serverSocket;
+
+    public static  SocketSendMessage SocketSendMessage;
+
+
+    ChatClientThread chatClientThread = null;
+    List<ChatClient> userList= new ArrayList<>();
+
+    String msgLog = "";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        txtMessageSend = (EditText) findViewById(R.id.txtMessageSend);
         ipTxt = (EditText) findViewById(R.id.iptxt);
         txtYourIp = (TextView) findViewById(R.id.txtYourIp);
         btnBeServer=(Button) findViewById(R.id.btnBeServer);
+        btnMessageSend=(Button) findViewById(R.id.btnMessageSend);
+        btnConnectToFriend = (Button) findViewById(R.id.button);
+        txtServerLog = (TextView) findViewById(R.id.txtServerLog);
+
+
+        connectionModeOn(false);
 
         txtYourIp.setText("Your Ip Adress: "+getIPAddress(true));
 
-        Button btn = (Button) findViewById(R.id.button);
-        btn.setOnClickListener(new View.OnClickListener() {
+
+        btnConnectToFriend.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
 
@@ -74,9 +101,14 @@ public class MainActivity extends AppCompatActivity {
 
                 // startActivity(i);
 
-                MyClientTask myClientTask = new MyClientTask(ipTxt.getText().toString(),
-                        Integer.parseInt(PORT));
-                myClientTask.execute();
+                isServer=true;
+
+
+
+
+                chatClientThread = new ChatClientThread("CHAT:",ipTxt.getText().toString(),Integer.parseInt(PORT));
+                chatClientThread.start();
+
             }
         });
 
@@ -90,77 +122,60 @@ public class MainActivity extends AppCompatActivity {
                 Log.i("Waiting::","waiting request from a friend");
 
 
-                Thread socketServerThread = new Thread(new SocketServerThread());
-                socketServerThread.start();
+
+                ChatServerThread chatServerThread = new ChatServerThread();
+                chatServerThread.start();
 
             }
         });
 
 
-    }
+
+        btnMessageSend.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
 
 
-
-    public class MyClientTask extends AsyncTask<Void, Void, Void> {
-
-        String dstAddress;
-        int dstPort;
-        String response = "";
-
-        MyClientTask(String addr, int port) {
-            dstAddress = addr;
-            dstPort = port;
-        }
-
-        @Override
-        protected Void doInBackground(Void... arg0) {
-
-            Socket socket = null;
-
-            try {
-                socket = new Socket(dstAddress, dstPort);
-
-                ByteArrayOutputStream byteArrayOutputStream =
-                        new ByteArrayOutputStream(1024);
-                byte[] buffer = new byte[1024];
-
-                int bytesRead;
-                InputStream inputStream = socket.getInputStream();
-
-
-                while ((bytesRead = inputStream.read(buffer)) != -1) {
-                    byteArrayOutputStream.write(buffer, 0, bytesRead);
-                    response += byteArrayOutputStream.toString("UTF-8");
+                if (txtMessageSend.getText().toString().equals("")) {
+                    return;
                 }
 
-            } catch (UnknownHostException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-                response = "UnknownHostException: " + e.toString();
-            } catch (IOException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-                response = "IOException: " + e.toString();
-            } finally {
-                if (socket != null) {
-                    try {
-                        socket.close();
-                    } catch (IOException e) {
-                        // TODO Auto-generated catch block
-                        e.printStackTrace();
-                    }
+                if(chatClientThread==null){
+                    return;
                 }
+
+                chatClientThread.sendMsg(txtMessageSend.getText().toString() + "\n");
+
             }
-            return null;
+        });
+
+    }
+
+
+    public void connectionModeOn(boolean connected)
+    {
+
+        isConnected=connected;
+
+        if(connected)
+        {
+            btnMessageSend.setVisibility(View.VISIBLE);
+            txtMessageSend.setVisibility(View.VISIBLE);
+            btnBeServer.setVisibility(View.GONE);
+            ipTxt.setVisibility(View.GONE);
+            btnConnectToFriend.setVisibility(View.GONE);
+
         }
+        else
+        {
+            btnMessageSend.setVisibility(View.GONE);
+            txtMessageSend.setVisibility(View.GONE);
 
-        @Override
-        protected void onPostExecute(Void result) {
+            btnBeServer.setVisibility(View.VISIBLE);
+            ipTxt.setVisibility(View.VISIBLE);
+            btnConnectToFriend.setVisibility(View.VISIBLE);
 
-            btnBeServer.setText(response);
-            super.onPostExecute(result);
         }
-
 
     }
 
@@ -169,64 +184,21 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-    private class SocketServerThread extends Thread {
 
-         int SocketServerPORT = Integer.parseInt(PORT);
-        int count = 0;
-
-        @Override
-        public void run() {
-            try {
-                serverSocket = new ServerSocket(SocketServerPORT);
-                MainActivity.this.runOnUiThread(new Runnable() {
-
-                    @Override
-                    public void run() {
-                        txtServerLog.setText("I'm waiting here: "+ serverSocket.getLocalPort());
-                    }
-                });
-
-                while (true) {
-                    Socket socket = serverSocket.accept();
-                    count++;
-                    message += "#" + count + " from " + socket.getInetAddress()
-                            + ":" + socket.getPort() + "\n";
-
-                    MainActivity.this.runOnUiThread(new Runnable() {
-
-                        @Override
-                        public void run() {
-                            txtServerLog.setText(message);
-                        }
-                    });
-
-                    SocketServerReplyThread socketServerReplyThread = new SocketServerReplyThread(
-                            socket, count);
-                    socketServerReplyThread.run();
-
-                }
-            } catch (IOException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
-        }
-
-    }
-
-    private class SocketServerReplyThread extends Thread {
+    private class SocketSendMessage extends Thread {
 
         private Socket hostThreadSocket;
-        int cnt;
+        String sendMessage;
 
-        SocketServerReplyThread(Socket socket, int c) {
+        SocketSendMessage(Socket socket, String message) {
             hostThreadSocket = socket;
-            cnt = c;
+            sendMessage = message;
         }
 
         @Override
         public void run() {
             OutputStream outputStream;
-            String msgReply = "Hello from Android, you are #" + cnt;
+            String msgReply = "" + sendMessage;
 
             try {
                 outputStream = hostThreadSocket.getOutputStream();
@@ -261,9 +233,6 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-
-
-
     public static String getIPAddress(boolean useIPv4) {
         try {
             List<NetworkInterface> interfaces = Collections.list(NetworkInterface.getNetworkInterfaces());
@@ -290,5 +259,341 @@ public class MainActivity extends AppCompatActivity {
         } catch (Exception ex) { } // for now eat exceptions
         return "";
     }
+
+
+
+
+    private class ChatClientThread extends Thread {
+
+        String name;
+        String dstAddress;
+        int dstPort;
+
+        String msgToSend = "";
+        boolean goOut = false;
+
+        ChatClientThread(String name, String address, int port) {
+            this.name = name;
+            dstAddress = address;
+            dstPort = port;
+        }
+
+        @Override
+        public void run() {
+            Socket socket = null;
+            DataOutputStream dataOutputStream = null;
+            DataInputStream dataInputStream = null;
+
+            try {
+                socket = new Socket(dstAddress, dstPort);
+
+                MainActivity.this.runOnUiThread(new Runnable() {
+
+                    @Override
+                    public void run() {
+                        connectionModeOn(true);
+                    }
+
+                });
+
+
+
+                dataOutputStream = new DataOutputStream(
+                        socket.getOutputStream());
+                dataInputStream = new DataInputStream(socket.getInputStream());
+                dataOutputStream.writeUTF(name);
+                dataOutputStream.flush();
+
+                while (!goOut) {
+                    if (dataInputStream.available() > 0) {
+                        msgLog += dataInputStream.readUTF();
+
+                        MainActivity.this.runOnUiThread(new Runnable() {
+
+                            @Override
+                            public void run() {
+                                txtServerLog.setText(msgLog);
+                            }
+                        });
+                    }
+
+                    if(!msgToSend.equals("")){
+                        dataOutputStream.writeUTF(msgToSend);
+                        dataOutputStream.flush();
+                        msgToSend = "";
+                    }
+                }
+
+            } catch (UnknownHostException e) {
+                e.printStackTrace();
+                final String eString = e.toString();
+                MainActivity.this.runOnUiThread(new Runnable() {
+
+                    @Override
+                    public void run() {
+                        Toast.makeText(MainActivity.this, eString, Toast.LENGTH_LONG).show();
+                    }
+
+                });
+            } catch (IOException e) {
+                e.printStackTrace();
+                final String eString = e.toString();
+                MainActivity.this.runOnUiThread(new Runnable() {
+
+                    @Override
+                    public void run() {
+                        Toast.makeText(MainActivity.this,"IOEXCEPTION:"+ eString, Toast.LENGTH_LONG).show();
+                    }
+
+                });
+            } finally {
+                if (socket != null) {
+                    try {
+                        socket.close();
+                    } catch (IOException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
+                }
+
+                if (dataOutputStream != null) {
+                    try {
+                        dataOutputStream.close();
+                    } catch (IOException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
+                }
+
+                if (dataInputStream != null) {
+                    try {
+                        dataInputStream.close();
+                    } catch (IOException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
+                }
+
+                MainActivity.this.runOnUiThread(new Runnable() {
+
+                    @Override
+                    public void run() {
+
+                    }
+
+                });
+            }
+
+        }
+
+        private void sendMsg(String msg){
+            msgToSend = msg;
+        }
+
+        private void disconnect(){
+            goOut = true;
+        }
+    }
+
+    //---------------------------------
+
+
+
+
+    private class ChatServerThread extends Thread {
+
+        @Override
+        public void run() {
+            Socket socket = null;
+
+            try {
+                serverSocket = new ServerSocket(Integer.parseInt(PORT));
+                MainActivity.this.runOnUiThread(new Runnable() {
+
+                    @Override
+                    public void run() {
+                       // infoPort.setText("I'm waiting here: "
+                              //  + serverSocket.getLocalPort());
+                    }
+                });
+
+                while (true) {
+                    socket = serverSocket.accept();
+                    ChatClient client = new ChatClient();
+                    userList.add(client);
+
+                    MainActivity.this.runOnUiThread(new Runnable() {
+
+                        @Override
+                        public void run() {
+                            connectionModeOn(true);
+                        }
+
+                    });
+                    ConnectThread connectThread = new ConnectThread(client, socket);
+                    connectThread.start();
+                }
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            } finally {
+                if (socket != null) {
+                    try {
+                        socket.close();
+                    } catch (IOException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
+                }
+            }
+
+        }
+
+    }
+
+    private class ConnectThread extends Thread {
+
+        Socket socket;
+        ChatClient connectClient;
+        String msgToSend = "";
+
+        ConnectThread(ChatClient client, Socket socket){
+            connectClient = client;
+            this.socket= socket;
+            client.socket = socket;
+            client.chatThread = this;
+        }
+
+        @Override
+        public void run() {
+            DataInputStream dataInputStream = null;
+            DataOutputStream dataOutputStream = null;
+
+            try {
+                dataInputStream = new DataInputStream(socket.getInputStream());
+                dataOutputStream = new DataOutputStream(socket.getOutputStream());
+
+                String n = dataInputStream.readUTF();
+
+                connectClient.name = n;
+
+                msgLog += connectClient.name + " connected@" +
+                        connectClient.socket.getInetAddress() +
+                        ":" + connectClient.socket.getPort() + "\n";
+                MainActivity.this.runOnUiThread(new Runnable() {
+
+                    @Override
+                    public void run() {
+                        txtServerLog.setText(msgLog);
+                    }
+                });
+
+                dataOutputStream.writeUTF("Welcome " + n + "\n");
+                dataOutputStream.flush();
+
+                broadcastMsg(n + " join our chat.\n");
+
+                while (true) {
+                    if (dataInputStream.available() > 0) {
+                        String newMsg = dataInputStream.readUTF();
+
+
+                        msgLog += n + ": " + newMsg;
+                        MainActivity.this.runOnUiThread(new Runnable() {
+
+                            @Override
+                            public void run() {
+                                txtServerLog.setText(msgLog);
+                            }
+                        });
+
+                        broadcastMsg(n + ": " + newMsg);
+                    }
+
+                    if(!msgToSend.equals("")){
+                        dataOutputStream.writeUTF(msgToSend);
+                        dataOutputStream.flush();
+                        msgToSend = "";
+                    }
+
+                }
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            } finally {
+                if (dataInputStream != null) {
+                    try {
+                        dataInputStream.close();
+                    } catch (IOException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
+                }
+
+                if (dataOutputStream != null) {
+                    try {
+                        dataOutputStream.close();
+                    } catch (IOException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
+                }
+
+                userList.remove(connectClient);
+                MainActivity.this.runOnUiThread(new Runnable() {
+
+                    @Override
+                    public void run() {
+                        Toast.makeText(MainActivity.this,
+                                connectClient.name + " removed.", Toast.LENGTH_LONG).show();
+
+                        msgLog += "-- " + connectClient.name + " leaved\n";
+                        MainActivity.this.runOnUiThread(new Runnable() {
+
+                            @Override
+                            public void run() {
+                                txtServerLog.setText(msgLog);
+                            }
+                        });
+
+                        broadcastMsg("-- " + connectClient.name + " leaved\n");
+                    }
+                });
+            }
+
+        }
+
+        private void sendMsg(String msg){
+            msgToSend = msg;
+        }
+
+    }
+
+    private void broadcastMsg(String msg){
+        for(int i=0; i<userList.size(); i++){
+            userList.get(i).chatThread.sendMsg(msg);
+            msgLog += "- send to " + userList.get(i).name + "\n";
+        }
+
+        MainActivity.this.runOnUiThread(new Runnable() {
+
+            @Override
+            public void run() {
+                txtServerLog.setText(msgLog);
+            }
+        });
+    }
+
+
+    class ChatClient {
+        String name;
+        Socket socket;
+        ConnectThread chatThread;
+
+    }
+
+
+
+
 
 }
