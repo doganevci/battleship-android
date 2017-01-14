@@ -61,13 +61,13 @@ public class MainActivity extends AppCompatActivity {
 
     boolean isConnected=false;
     boolean isServer=false;
-    public static Socket theConnectedSocket;
     public static ServerSocket serverSocket;
 
-    public static  SocketSendMessage SocketSendMessage;
+
 
 
     ChatClientThread chatClientThread = null;
+    ConnectThread connectThread=null;
     List<ChatClient> userList= new ArrayList<>();
 
     String msgLog = "";
@@ -141,10 +141,17 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 if(chatClientThread==null){
-                    return;
+
+                  //  connectThread.sendMsg(txtMessageSend.getText().toString() + "\n");
+
+                    broadcastMsg(txtMessageSend.getText().toString() + "\n");
+                }
+                else
+                {
+                    chatClientThread.sendMsg(txtMessageSend.getText().toString() + "\n");
                 }
 
-                chatClientThread.sendMsg(txtMessageSend.getText().toString() + "\n");
+
 
             }
         });
@@ -179,60 +186,6 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-
-
-
-
-
-
-    private class SocketSendMessage extends Thread {
-
-        private Socket hostThreadSocket;
-        String sendMessage;
-
-        SocketSendMessage(Socket socket, String message) {
-            hostThreadSocket = socket;
-            sendMessage = message;
-        }
-
-        @Override
-        public void run() {
-            OutputStream outputStream;
-            String msgReply = "" + sendMessage;
-
-            try {
-                outputStream = hostThreadSocket.getOutputStream();
-                PrintStream printStream = new PrintStream(outputStream);
-                printStream.print(msgReply);
-                printStream.close();
-
-                message += "replayed: " + msgReply + "\n";
-
-                MainActivity.this.runOnUiThread(new Runnable() {
-
-                    @Override
-                    public void run() {
-                        txtServerLog.setText(message);
-                    }
-                });
-
-            } catch (IOException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-                message += "Something wrong! " + e.toString() + "\n";
-            }
-
-            MainActivity.this.runOnUiThread(new Runnable() {
-
-                @Override
-                public void run() {
-                    txtServerLog.setText(message);
-                }
-            });
-        }
-
-    }
-
     public static String getIPAddress(boolean useIPv4) {
         try {
             List<NetworkInterface> interfaces = Collections.list(NetworkInterface.getNetworkInterfaces());
@@ -262,7 +215,7 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-
+    //____Client
     private class ChatClientThread extends Thread {
 
         String name;
@@ -395,11 +348,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    //---------------------------------
-
-
-
-
+    //----SERVER
     private class ChatServerThread extends Thread {
 
         @Override
@@ -430,7 +379,7 @@ public class MainActivity extends AppCompatActivity {
                         }
 
                     });
-                    ConnectThread connectThread = new ConnectThread(client, socket);
+                     connectThread = new ConnectThread(client, socket);
                     connectThread.start();
                 }
 
@@ -451,6 +400,7 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    //____Guest_
     private class ConnectThread extends Thread {
 
         Socket socket;
@@ -569,6 +519,9 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+
+
+
     private void broadcastMsg(String msg){
         for(int i=0; i<userList.size(); i++){
             userList.get(i).chatThread.sendMsg(msg);
@@ -583,7 +536,6 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
-
 
     class ChatClient {
         String name;
