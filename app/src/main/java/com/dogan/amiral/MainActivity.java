@@ -14,6 +14,9 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.dogan.amiral.models.AllLists;
+import com.dogan.amiral.models.GenericSendReceiveModel;
+import com.dogan.amiral.models.messageModel;
 import com.google.android.gms.appindexing.Action;
 import com.google.android.gms.appindexing.AppIndex;
 import com.google.android.gms.appindexing.Thing;
@@ -26,6 +29,8 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.net.InetAddress;
@@ -41,30 +46,27 @@ import java.util.Enumeration;
 import java.util.List;
 
 import static android.R.id.message;
+import static com.dogan.amiral.models.AllLists.THE_MESSAGE_LIST;
 
 public class MainActivity extends AppCompatActivity {
 
     EditText ipTxt;
-    String message = "";
+    EditText txtMessageSend;
 
     TextView txtYourIp;
+    TextView txtServerLog;
+
     Button btnBeServer;
     Button btnMessageSend;
     Button btnConnectToFriend;
-    EditText txtMessageSend;
+
 
     String PORT="65123";
-
-
-    TextView txtServerLog;
 
 
     boolean isConnected=false;
     boolean isServer=false;
     public static ServerSocket serverSocket;
-
-
-
 
     ChatClientThread chatClientThread = null;
     ConnectThread connectThread=null;
@@ -106,7 +108,7 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-                chatClientThread = new ChatClientThread("CHAT:",ipTxt.getText().toString(),Integer.parseInt(PORT));
+                chatClientThread = new ChatClientThread("Clint Dogan:",ipTxt.getText().toString(),Integer.parseInt(PORT));
                 chatClientThread.start();
 
             }
@@ -136,25 +138,47 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
 
 
-                if (txtMessageSend.getText().toString().equals("")) {
-                    return;
-                }
 
-                if(chatClientThread==null){
-
-                  //  connectThread.sendMsg(txtMessageSend.getText().toString() + "\n");
-
-                    broadcastMsg(txtMessageSend.getText().toString() + "\n");
-                }
-                else
-                {
-                    chatClientThread.sendMsg(txtMessageSend.getText().toString() + "\n");
-                }
-
+                sendMessage(txtMessageSend.getText().toString());
 
 
             }
         });
+
+    }
+
+
+    public void sendMessage(String messageText)
+    {
+        //THE_MESSAGE_LIST.
+
+
+        Log.i("SENDMESSAGEBTN::","clicked");
+
+        messageModel newMessage=new messageModel();
+        newMessage.setMessage(messageText);
+        newMessage.setUsername("USER");
+
+        GenericSendReceiveModel genNew=new GenericSendReceiveModel();
+        genNew.setType(1);
+        genNew.setMessage(newMessage);
+
+
+
+        if (txtMessageSend.getText().toString().equals("")) {
+            return;
+        }
+
+        if(chatClientThread==null){
+
+
+            connectThread.sendMsg(genNew);
+           // broadcastMsg(messageText);
+        }
+        else
+        {
+            chatClientThread.sendMsg(genNew);
+        }
 
     }
 
@@ -222,7 +246,9 @@ public class MainActivity extends AppCompatActivity {
         String dstAddress;
         int dstPort;
 
-        String msgToSend = "";
+        GenericSendReceiveModel msgToSend = null;
+        GenericSendReceiveModel receivedMessage = null;
+
         boolean goOut = false;
 
         ChatClientThread(String name, String address, int port) {
@@ -234,11 +260,12 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void run() {
             Socket socket = null;
-            DataOutputStream dataOutputStream = null;
-            DataInputStream dataInputStream = null;
+            ObjectOutputStream dataOutputStream = null;
+            ObjectInputStream dataInputStream = null;
 
             try {
                 socket = new Socket(dstAddress, dstPort);
+                socket.setReceiveBufferSize(50000);
 
                 MainActivity.this.runOnUiThread(new Runnable() {
 
@@ -251,29 +278,74 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-                dataOutputStream = new DataOutputStream(
+                messageModel newMessage=new messageModel();
+                newMessage.setMessage("Hi,");
+                newMessage.setUsername(name);
+
+                GenericSendReceiveModel genNew=new GenericSendReceiveModel();
+                genNew.setType(1);
+                genNew.setMessage(newMessage);
+
+                dataOutputStream = new ObjectOutputStream(
                         socket.getOutputStream());
-                dataInputStream = new DataInputStream(socket.getInputStream());
-                dataOutputStream.writeUTF(name);
+                dataInputStream = new ObjectInputStream(socket.getInputStream());
+                dataOutputStream.writeObject(genNew);
                 dataOutputStream.flush();
 
+
+
+
                 while (!goOut) {
-                    if (dataInputStream.available() > 0) {
-                        msgLog += dataInputStream.readUTF();
+                    Log.i("CLIENT::","WROKING");
 
-                        MainActivity.this.runOnUiThread(new Runnable() {
 
-                            @Override
-                            public void run() {
-                                txtServerLog.setText(msgLog);
+                    try {
+
+
+
+
+
+
+                        if (dataInputStream.available()>0) {
+
+                            Log.i("MESSAGE::","RECEIVING");
+
+                            receivedMessage=(GenericSendReceiveModel)(dataInputStream.readObject());
+
+
+
+                            if(receivedMessage.getType()==1)
+                            {
+                                AllLists.THE_MESSAGE_LIST.add(receivedMessage.getMessage());
+                                msgLog+="mesaj::"+receivedMessage.getMessage().getMessage();
                             }
-                        });
+
+
+                            MainActivity.this.runOnUiThread(new Runnable() {
+
+                                @Override
+                                public void run() {
+                                    txtServerLog.setText(msgLog);
+                                }
+                            });
+
+                            receivedMessage=null;
+                        }
+                    }catch (Exception e)
+                    {
+                        e.printStackTrace();
                     }
 
-                    if(!msgToSend.equals("")){
-                        dataOutputStream.writeUTF(msgToSend);
+                    Log.i("ARADA::","KALDIM");
+
+                    if(msgToSend!=null){
+
+                        Log.i("MESSAGE::","SENDING");
+
+                        dataOutputStream.writeObject(msgToSend);
                         dataOutputStream.flush();
-                        msgToSend = "";
+                        msgToSend = null;
+
                     }
                 }
 
@@ -299,9 +371,12 @@ public class MainActivity extends AppCompatActivity {
                     }
 
                 });
-            } finally {
+            }  finally {
                 if (socket != null) {
                     try {
+
+
+                        Log.i("SOCKET::","closing");
                         socket.close();
                     } catch (IOException e) {
                         // TODO Auto-generated catch block
@@ -310,6 +385,9 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 if (dataOutputStream != null) {
+
+                    Log.i("SOCKET2::","closing");
+
                     try {
                         dataOutputStream.close();
                     } catch (IOException e) {
@@ -319,6 +397,9 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 if (dataInputStream != null) {
+
+
+                    Log.i("SOCKET3::","closing");
                     try {
                         dataInputStream.close();
                     } catch (IOException e) {
@@ -327,19 +408,12 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
 
-                MainActivity.this.runOnUiThread(new Runnable() {
 
-                    @Override
-                    public void run() {
-
-                    }
-
-                });
             }
 
         }
 
-        private void sendMsg(String msg){
+        private void sendMsg(GenericSendReceiveModel msg){
             msgToSend = msg;
         }
 
@@ -405,7 +479,10 @@ public class MainActivity extends AppCompatActivity {
 
         Socket socket;
         ChatClient connectClient;
-        String msgToSend = "";
+
+
+        GenericSendReceiveModel msgToSend = null;
+        GenericSendReceiveModel receivedMessage = null;
 
         ConnectThread(ChatClient client, Socket socket){
             connectClient = client;
@@ -416,16 +493,23 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public void run() {
-            DataInputStream dataInputStream = null;
-            DataOutputStream dataOutputStream = null;
+            ObjectInputStream dataInputStream = null;
+            ObjectOutputStream dataOutputStream = null;
 
             try {
-                dataInputStream = new DataInputStream(socket.getInputStream());
-                dataOutputStream = new DataOutputStream(socket.getOutputStream());
+                socket.setReceiveBufferSize(50000);
+            } catch (SocketException e) {
+                e.printStackTrace();
+            }
 
-                String n = dataInputStream.readUTF();
+            try {
+                dataInputStream = new ObjectInputStream(socket.getInputStream());
+                dataOutputStream = new ObjectOutputStream(socket.getOutputStream());
 
-                connectClient.name = n;
+
+                GenericSendReceiveModel n = (GenericSendReceiveModel) dataInputStream.readObject();
+
+                connectClient.name = n.getMessage().getUsername();
 
                 msgLog += connectClient.name + " connected@" +
                         connectClient.socket.getInetAddress() +
@@ -438,40 +522,89 @@ public class MainActivity extends AppCompatActivity {
                     }
                 });
 
-                dataOutputStream.writeUTF("Welcome " + n + "\n");
+
+                messageModel newMessage=new messageModel();
+                newMessage.setMessage(""+n.getMessage().getUsername()+ "join chat.");
+                newMessage.setUsername("Server:");
+
+                GenericSendReceiveModel genNew=new GenericSendReceiveModel();
+                genNew.setType(1);
+                genNew.setMessage(newMessage);
+
+
+
+                dataOutputStream.writeObject(genNew);
                 dataOutputStream.flush();
 
-                broadcastMsg(n + " join our chat.\n");
+                broadcastMsg(n.getMessage().getUsername() + " join our chat.\n");
+
+
+
 
                 while (true) {
-                    if (dataInputStream.available() > 0) {
-                        String newMsg = dataInputStream.readUTF();
+
+                    Log.i("SERVER::","WROKING");
+                    try {
 
 
-                        msgLog += n + ": " + newMsg;
-                        MainActivity.this.runOnUiThread(new Runnable() {
 
-                            @Override
-                            public void run() {
-                                txtServerLog.setText(msgLog);
+
+
+
+                        if (dataInputStream.available()>0){
+
+                            Log.i("MESSAGE::","RECEIVING");
+
+                            receivedMessage=(GenericSendReceiveModel)(dataInputStream.readObject());
+
+                            if(receivedMessage.getType()==1)
+                            {
+                                AllLists.THE_MESSAGE_LIST.add(receivedMessage.getMessage());
+                                msgLog+="mesaj::"+receivedMessage.getMessage().getMessage();
                             }
-                        });
 
-                        broadcastMsg(n + ": " + newMsg);
+
+                            MainActivity.this.runOnUiThread(new Runnable() {
+
+                                @Override
+                                public void run() {
+                                    txtServerLog.setText(msgLog);
+                                }
+                            });
+
+                            receivedMessage=null;
+                        }
+                    }catch (Exception e)
+                    {
+                        e.printStackTrace();
                     }
 
-                    if(!msgToSend.equals("")){
-                        dataOutputStream.writeUTF(msgToSend);
+                    Log.i("ARADA::","KALDIM");
+
+                    if(msgToSend!=null){
+
+                        Log.i("MESSAGE::","SENDING");
+
+                        dataOutputStream.writeObject(msgToSend);
                         dataOutputStream.flush();
-                        msgToSend = "";
+                        msgToSend = null;
+
                     }
 
                 }
 
             } catch (IOException e) {
                 e.printStackTrace();
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
             } finally {
+
+                Log.i("SOCKET::","closing");
+
                 if (dataInputStream != null) {
+
+                    Log.i("SOCKET2::","closing");
+
                     try {
                         dataInputStream.close();
                     } catch (IOException e) {
@@ -506,14 +639,14 @@ public class MainActivity extends AppCompatActivity {
                             }
                         });
 
-                        broadcastMsg("-- " + connectClient.name + " leaved\n");
+                       // broadcastMsg("-- " + connectClient.name + " leaved\n");
                     }
                 });
             }
 
         }
 
-        private void sendMsg(String msg){
+        private void sendMsg(GenericSendReceiveModel msg){
             msgToSend = msg;
         }
 
@@ -521,10 +654,20 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-
     private void broadcastMsg(String msg){
+
+
+        messageModel newMessage=new messageModel();
+        newMessage.setMessage(msg);
+        newMessage.setUsername("Server:");
+
+        GenericSendReceiveModel genNew=new GenericSendReceiveModel();
+        genNew.setType(1);
+        genNew.setMessage(newMessage);
+
+
         for(int i=0; i<userList.size(); i++){
-            userList.get(i).chatThread.sendMsg(msg);
+            userList.get(i).chatThread.sendMsg(genNew);
             msgLog += "- send to " + userList.get(i).name + "\n";
         }
 
@@ -537,15 +680,15 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+
+
+
     class ChatClient {
         String name;
         Socket socket;
         ConnectThread chatThread;
 
     }
-
-
-
 
 
 }
