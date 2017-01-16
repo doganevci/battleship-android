@@ -70,6 +70,10 @@ public class MainActivity extends AppCompatActivity {
 
     ChatClientThread chatClientThread = null;
     ConnectThread connectThread=null;
+
+    SenderThread  ClientSenderThread=null;
+    SenderThread  ConnectedSenderThread=null;
+
     List<ChatClient> userList= new ArrayList<>();
 
     String msgLog = "";
@@ -172,12 +176,12 @@ public class MainActivity extends AppCompatActivity {
         if(chatClientThread==null){
 
 
-            connectThread.sendMsg(genNew);
-           // broadcastMsg(messageText);
+            ConnectedSenderThread.sendMsg(genNew);
+            // broadcastMsg(messageText);
         }
         else
         {
-            chatClientThread.sendMsg(genNew);
+            ClientSenderThread.sendMsg(genNew);
         }
 
     }
@@ -293,24 +297,26 @@ public class MainActivity extends AppCompatActivity {
                 dataOutputStream.flush();
 
 
+               ClientSenderThread = new SenderThread(socket,dataOutputStream);
+                ClientSenderThread.start();
 
+
+
+                //dataInputStream = new ObjectInputStream(socket.getInputStream());
 
                 while (!goOut) {
                     Log.i("CLIENT::","WROKING");
 
 
-                    try {
 
 
 
-
-
-
-                        if (dataInputStream.available()>0) {
+                        if ((receivedMessage=(GenericSendReceiveModel)(dataInputStream.readObject())) != null) {
+                            //  if (dataInputStream.available()>0){
 
                             Log.i("MESSAGE::","RECEIVING");
 
-                            receivedMessage=(GenericSendReceiveModel)(dataInputStream.readObject());
+                           // receivedMessage=(GenericSendReceiveModel)(dataInputStream.readObject());
 
 
 
@@ -331,10 +337,7 @@ public class MainActivity extends AppCompatActivity {
 
                             receivedMessage=null;
                         }
-                    }catch (Exception e)
-                    {
-                        e.printStackTrace();
-                    }
+
 
                     Log.i("ARADA::","KALDIM");
 
@@ -371,7 +374,9 @@ public class MainActivity extends AppCompatActivity {
                     }
 
                 });
-            }  finally {
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
+            } finally {
                 if (socket != null) {
                     try {
 
@@ -435,8 +440,8 @@ public class MainActivity extends AppCompatActivity {
 
                     @Override
                     public void run() {
-                       // infoPort.setText("I'm waiting here: "
-                              //  + serverSocket.getLocalPort());
+                        // infoPort.setText("I'm waiting here: "
+                        //  + serverSocket.getLocalPort());
                     }
                 });
 
@@ -453,8 +458,12 @@ public class MainActivity extends AppCompatActivity {
                         }
 
                     });
-                     connectThread = new ConnectThread(client, socket);
+                    connectThread = new ConnectThread(client, socket);
                     connectThread.start();
+
+
+
+
                 }
 
             } catch (IOException e) {
@@ -536,10 +545,10 @@ public class MainActivity extends AppCompatActivity {
                 dataOutputStream.writeObject(genNew);
                 dataOutputStream.flush();
 
-                broadcastMsg(n.getMessage().getUsername() + " join our chat.\n");
 
-
-
+                //Dikkat dataoutputstream'i birden fazla yaratırsak  streamcorruptedexception veriri
+                ConnectedSenderThread = new SenderThread(socket,dataOutputStream);
+                ConnectedSenderThread.start();
 
                 while (true) {
 
@@ -550,12 +559,12 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-
-                        if (dataInputStream.available()>0){
+                        if ((receivedMessage=(GenericSendReceiveModel)(dataInputStream.readObject())) != null) {
+                      //  if (dataInputStream.available()>0){
 
                             Log.i("MESSAGE::","RECEIVING");
 
-                            receivedMessage=(GenericSendReceiveModel)(dataInputStream.readObject());
+                           // receivedMessage=(GenericSendReceiveModel)(dataInputStream.readObject());
 
                             if(receivedMessage.getType()==1)
                             {
@@ -639,7 +648,7 @@ public class MainActivity extends AppCompatActivity {
                             }
                         });
 
-                       // broadcastMsg("-- " + connectClient.name + " leaved\n");
+                        // broadcastMsg("-- " + connectClient.name + " leaved\n");
                     }
                 });
             }
@@ -651,6 +660,69 @@ public class MainActivity extends AppCompatActivity {
         }
 
     }
+
+
+
+
+
+
+    private class SenderThread extends Thread {
+
+        Socket socket;
+        GenericSendReceiveModel msgToSend = null;
+        ObjectOutputStream dataOutputStream = null;
+
+        SenderThread(Socket socket,ObjectOutputStream data){
+            this.socket= socket;
+            this.dataOutputStream=data;
+        }
+
+        @Override
+        public void run() {
+
+
+            try {
+
+              //  dataOutputStream = new ObjectOutputStream(socket.getOutputStream());
+
+                while (true) {
+
+                    if(msgToSend!=null){
+                        Log.i("MESSAGESENDERNEWW::","SENDING");
+                        dataOutputStream.writeObject(msgToSend);
+                        dataOutputStream.flush();
+                        msgToSend = null;
+
+                    }
+
+                }
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            } finally {
+
+                if (dataOutputStream != null) {
+                    try {
+                        dataOutputStream.close();
+                    } catch (IOException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
+                }
+
+
+            }
+
+        }
+
+        private void sendMsg(GenericSendReceiveModel msg){
+            msgToSend = msg;
+        }
+
+    }
+
+
+
 
 
 
