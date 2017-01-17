@@ -35,7 +35,7 @@ public class SenderThread extends Thread {
                 if(msgToSend!=null){
                     Log.i("MESSAGESENDER::","SENDING");
 
-                    AllLists.THE_MESSAGE_LIST.add(msgToSend.getMessage());
+
 
                     dataOutputStream.writeObject(msgToSend);
                     dataOutputStream.flush();
@@ -63,6 +63,10 @@ public class SenderThread extends Thread {
     }
 
     public  void sendMsg(GenericSendReceiveModel msg){
+        msgToSend = msg;
+    }
+
+    public  void sendMovementPlay(GenericSendReceiveModel msg){
         msgToSend = msg;
     }
 

@@ -4,57 +4,30 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.net.Uri;
-import android.net.wifi.WifiManager;
-import android.os.AsyncTask;
+import android.support.v4.app.Fragment;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.text.format.Formatter;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
-import android.widget.Toast;
 
-import com.dogan.amiral.Network.ChatClientThread;
-import com.dogan.amiral.Network.ChatServerThread;
+import com.dogan.amiral.Network.ReceiverClientThread;
+import com.dogan.amiral.Network.ReceiverServerThread;
 import com.dogan.amiral.models.AllLists;
 import com.dogan.amiral.models.GenericSendReceiveModel;
 import com.dogan.amiral.models.messageModel;
-import com.google.android.gms.appindexing.Action;
-import com.google.android.gms.appindexing.AppIndex;
-import com.google.android.gms.appindexing.Thing;
-import com.google.android.gms.common.api.GoogleApiClient;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
-import java.io.PrintStream;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.net.SocketException;
-import java.net.URL;
-import java.net.UnknownHostException;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Enumeration;
 import java.util.List;
 
-import static android.R.id.message;
-import static com.dogan.amiral.models.AllLists.THE_MESSAGE_LIST;
-
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends Fragment {
 
     EditText ipTxt;
     EditText txtMessageSend;
@@ -72,27 +45,28 @@ public class MainActivity extends AppCompatActivity {
     boolean isServer=false;
 
     public String PORT="65123";
-    ChatClientThread chatClientThread = null;
-    ChatServerThread chatServerThread=null;
+    ReceiverClientThread chatClientThread = null;
+    ReceiverServerThread chatServerThread=null;
+
+
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
+        View rootView = inflater.inflate(R.layout.activity_main, container, false);
 
 
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-        txtMessageSend = (EditText) findViewById(R.id.txtMessageSend);
-        ipTxt = (EditText) findViewById(R.id.iptxt);
-        txtYourIp = (TextView) findViewById(R.id.txtYourIp);
-        btnBeServer=(Button) findViewById(R.id.btnBeServer);
-        btnMessageSend=(Button) findViewById(R.id.btnMessageSend);
-        btnConnectToFriend = (Button) findViewById(R.id.button);
-        txtServerLog = (TextView) findViewById(R.id.txtServerLog);
+        txtMessageSend = (EditText)rootView. findViewById(R.id.txtMessageSend);
+        ipTxt = (EditText) rootView.findViewById(R.id.iptxt);
+        txtYourIp = (TextView) rootView.findViewById(R.id.txtYourIp);
+        btnBeServer=(Button) rootView.findViewById(R.id.btnBeServer);
+        btnMessageSend=(Button) rootView.findViewById(R.id.btnMessageSend);
+        btnConnectToFriend = (Button) rootView.findViewById(R.id.button);
+        txtServerLog = (TextView)rootView. findViewById(R.id.txtServerLog);
 
 
-        LocalBroadcastManager.getInstance(this).registerReceiver(mMessageReceiver,
+
+        LocalBroadcastManager.getInstance(getActivity()).registerReceiver(mMessageReceiver,
                 new IntentFilter("custom-event-name"));
-
 
         connectionModeOn(false);
 
@@ -105,17 +79,7 @@ public class MainActivity extends AppCompatActivity {
 
                 Log.i("Connecting::","connect request to a friend");
 
-                Intent i = new Intent(getApplicationContext(), amiralMainActivity.class);
-                i.putExtra("txtIp", ipTxt.getText().toString());
-
-                // startActivity(i);
-
-                isServer=true;
-
-
-
-
-                chatClientThread = new ChatClientThread("Clint Dogan:",ipTxt.getText().toString(),Integer.parseInt(PORT),MainActivity.this);
+                chatClientThread = new ReceiverClientThread("Clint Dogan:",ipTxt.getText().toString(),Integer.parseInt(PORT),getActivity());
                 chatClientThread.start();
 
             }
@@ -129,12 +93,8 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 Log.i("Waiting::","waiting request from a friend");
-
-
-
-                 chatServerThread = new ChatServerThread(MainActivity.this);
+                chatServerThread = new ReceiverServerThread(getActivity());
                 chatServerThread.start();
-
             }
         });
 
@@ -143,16 +103,17 @@ public class MainActivity extends AppCompatActivity {
         btnMessageSend.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-
-
-
                 sendMessage(txtMessageSend.getText().toString());
-
-
             }
         });
 
+
+        return rootView;
     }
+
+
+
+
 
 
     public void sendMessage(String messageText)
@@ -188,7 +149,7 @@ public class MainActivity extends AppCompatActivity {
             chatClientThread.getSenderThread().sendMsg(genNew);
         }
 
-
+        AllLists.THE_MESSAGE_LIST.add(genNew.getMessage());
         refreshMessageList();
 
     }
@@ -206,6 +167,7 @@ public class MainActivity extends AppCompatActivity {
             btnBeServer.setVisibility(View.GONE);
             ipTxt.setVisibility(View.GONE);
             btnConnectToFriend.setVisibility(View.GONE);
+            txtYourIp.setVisibility(View.GONE);
 
         }
         else
@@ -216,7 +178,7 @@ public class MainActivity extends AppCompatActivity {
             btnBeServer.setVisibility(View.VISIBLE);
             ipTxt.setVisibility(View.VISIBLE);
             btnConnectToFriend.setVisibility(View.VISIBLE);
-
+            txtYourIp.setVisibility(View.VISIBLE);
         }
 
     }
@@ -280,7 +242,7 @@ public class MainActivity extends AppCompatActivity {
         for(messageModel m: AllLists.THE_MESSAGE_LIST)
         {
 
-            if(m.isThisMe())
+            if(!m.isThisMe())
             {
                 allText+="\nMe::"+m.getMessage();
             }

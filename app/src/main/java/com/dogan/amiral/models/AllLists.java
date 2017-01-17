@@ -1,5 +1,7 @@
 package com.dogan.amiral.models;
 
+import com.dogan.amiral.game.ship;
+
 import java.util.ArrayList;
 
 /**
@@ -9,4 +11,6 @@ import java.util.ArrayList;
 public class AllLists {
 
     public static ArrayList<messageModel> THE_MESSAGE_LIST= new ArrayList<>();
+    public static ArrayList<ship> THE_SHIP_LIST= new ArrayList<>();
+    public static ArrayList<Integer> THE_MY_BOARD= new ArrayList<>();
 }

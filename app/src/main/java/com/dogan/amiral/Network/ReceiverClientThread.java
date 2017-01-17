@@ -21,7 +21,7 @@ import java.net.UnknownHostException;
  * Created by doganevci on 17/01/2017.
  */
 
-public class ChatClientThread extends Thread {
+public class ReceiverClientThread extends Thread {
 
     String name;
     String dstAddress;
@@ -36,7 +36,7 @@ public class ChatClientThread extends Thread {
 
     boolean goOut = false;
 
-    public ChatClientThread(String name, String address, int port,Context cntx) {
+    public ReceiverClientThread(String name, String address, int port, Context cntx) {
         this.name = name;
         dstAddress = address;
         dstPort = port;
@@ -85,13 +85,15 @@ public class ChatClientThread extends Thread {
                     Log.i("MESSAGE::","RECEIVING");
 
 
-                    if(receivedMessage.getType()==1)
+                    if(receivedMessage.getType()==1) // type1 mesaj geldi demek
                     {
                         AllLists.THE_MESSAGE_LIST.add(receivedMessage.getMessage());
 
                         //TODO Broadcast to Refresh messages list
                         sendBroadCast(2);
                     }
+
+
                     receivedMessage=null;
                 }
 

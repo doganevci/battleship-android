@@ -12,14 +12,14 @@ import java.net.Socket;
  * Created by doganevci on 17/01/2017.
  */
 
-public class ChatServerThread extends Thread {
+public class ReceiverServerThread extends Thread {
 
     public static ServerSocket serverSocket;
     public String PORT="65123";
     public ConnectThread connectThread=null;
     Context cntx;
 
-    public ChatServerThread( Context cntx){
+    public ReceiverServerThread(Context cntx){
         this.cntx= cntx;
     }
 
