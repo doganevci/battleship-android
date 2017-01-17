@@ -1,5 +1,3 @@
-# README #
-
 #Amiral Game#
 
 ##Author##
