@@ -2,8 +2,9 @@
 
 #Amiral Game#
 
-#Author# Doğan Evci
+#Author# 
+Doğan Evci
 
 * Quick summary
 * Version   1.0
-* [Learn Markdown](https://bitbucket.org/tutorials/markdowndemo)
+* Min  Android OS 4.1
