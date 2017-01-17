@@ -2,7 +2,7 @@
 
 #Amiral Game#
 
-#Author# 
+##Author##
 Doğan Evci
 
 * Quick summary
