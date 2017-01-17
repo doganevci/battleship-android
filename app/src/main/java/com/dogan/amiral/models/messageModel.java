@@ -12,6 +12,23 @@ public class messageModel implements Serializable{
 
     String username;
     String message;
+    boolean isThisMe;
+
+    public messageModel()
+    {
+        isThisMe=true;
+    }
+
+
+    public boolean isThisMe() {
+        return isThisMe;
+    }
+
+    public void setThisMe(boolean thisMe) {
+        isThisMe = thisMe;
+    }
+
+
 
     public String getUsername() {
         return username;

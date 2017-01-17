@@ -1,9 +1,13 @@
 package com.dogan.amiral;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.net.Uri;
 import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.format.Formatter;
@@ -14,6 +18,8 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.dogan.amiral.Network.ChatClientThread;
+import com.dogan.amiral.Network.ChatServerThread;
 import com.dogan.amiral.models.AllLists;
 import com.dogan.amiral.models.GenericSendReceiveModel;
 import com.dogan.amiral.models.messageModel;
@@ -61,22 +67,15 @@ public class MainActivity extends AppCompatActivity {
     Button btnConnectToFriend;
 
 
-    String PORT="65123";
-
 
     boolean isConnected=false;
     boolean isServer=false;
-    public static ServerSocket serverSocket;
 
+    public String PORT="65123";
     ChatClientThread chatClientThread = null;
-    ConnectThread connectThread=null;
+    ChatServerThread chatServerThread=null;
 
-    SenderThread  ClientSenderThread=null;
-    SenderThread  ConnectedSenderThread=null;
 
-    List<ChatClient> userList= new ArrayList<>();
-
-    String msgLog = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -89,6 +88,10 @@ public class MainActivity extends AppCompatActivity {
         btnMessageSend=(Button) findViewById(R.id.btnMessageSend);
         btnConnectToFriend = (Button) findViewById(R.id.button);
         txtServerLog = (TextView) findViewById(R.id.txtServerLog);
+
+
+        LocalBroadcastManager.getInstance(this).registerReceiver(mMessageReceiver,
+                new IntentFilter("custom-event-name"));
 
 
         connectionModeOn(false);
@@ -112,7 +115,7 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-                chatClientThread = new ChatClientThread("Clint Dogan:",ipTxt.getText().toString(),Integer.parseInt(PORT));
+                chatClientThread = new ChatClientThread("Clint Dogan:",ipTxt.getText().toString(),Integer.parseInt(PORT),MainActivity.this);
                 chatClientThread.start();
 
             }
@@ -129,7 +132,7 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-                ChatServerThread chatServerThread = new ChatServerThread();
+                 chatServerThread = new ChatServerThread(MainActivity.this);
                 chatServerThread.start();
 
             }
@@ -162,6 +165,7 @@ public class MainActivity extends AppCompatActivity {
         messageModel newMessage=new messageModel();
         newMessage.setMessage(messageText);
         newMessage.setUsername("USER");
+        newMessage.setThisMe(false);
 
         GenericSendReceiveModel genNew=new GenericSendReceiveModel();
         genNew.setType(1);
@@ -176,13 +180,16 @@ public class MainActivity extends AppCompatActivity {
         if(chatClientThread==null){
 
 
-            ConnectedSenderThread.sendMsg(genNew);
-            // broadcastMsg(messageText);
+            chatServerThread.getConnectedThread().getSenderThread().sendMsg(genNew);
+
         }
         else
         {
-            ClientSenderThread.sendMsg(genNew);
+            chatClientThread.getSenderThread().sendMsg(genNew);
         }
+
+
+        refreshMessageList();
 
     }
 
@@ -243,524 +250,49 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-    //____Client
-    private class ChatClientThread extends Thread {
-
-        String name;
-        String dstAddress;
-        int dstPort;
-
-        GenericSendReceiveModel msgToSend = null;
-        GenericSendReceiveModel receivedMessage = null;
-
-        boolean goOut = false;
-
-        ChatClientThread(String name, String address, int port) {
-            this.name = name;
-            dstAddress = address;
-            dstPort = port;
-        }
-
+    private BroadcastReceiver mMessageReceiver = new BroadcastReceiver() {
         @Override
-        public void run() {
-            Socket socket = null;
-            ObjectOutputStream dataOutputStream = null;
-            ObjectInputStream dataInputStream = null;
-
-            try {
-                socket = new Socket(dstAddress, dstPort);
-                socket.setReceiveBufferSize(50000);
-
-                MainActivity.this.runOnUiThread(new Runnable() {
-
-                    @Override
-                    public void run() {
-                        connectionModeOn(true);
-                    }
-
-                });
+        public void onReceive(Context context, Intent intent) {
 
 
+            // Get extra data included in the Intent
+            int type = intent.getIntExtra("type",0);
 
-                messageModel newMessage=new messageModel();
-                newMessage.setMessage("Hi,");
-                newMessage.setUsername(name);
-
-                GenericSendReceiveModel genNew=new GenericSendReceiveModel();
-                genNew.setType(1);
-                genNew.setMessage(newMessage);
-
-                dataOutputStream = new ObjectOutputStream(
-                        socket.getOutputStream());
-                dataInputStream = new ObjectInputStream(socket.getInputStream());
-                dataOutputStream.writeObject(genNew);
-                dataOutputStream.flush();
-
-
-               ClientSenderThread = new SenderThread(socket,dataOutputStream);
-                ClientSenderThread.start();
-
-
-
-                //dataInputStream = new ObjectInputStream(socket.getInputStream());
-
-                while (!goOut) {
-                    Log.i("CLIENT::","WROKING");
+            if(type==1)
+            {
+                connectionModeOn(true);
+            }
+            else if(type == 2)
+            {
+                refreshMessageList();
+            }
 
 
 
 
-
-                        if ((receivedMessage=(GenericSendReceiveModel)(dataInputStream.readObject())) != null) {
-                            //  if (dataInputStream.available()>0){
-
-                            Log.i("MESSAGE::","RECEIVING");
-
-                           // receivedMessage=(GenericSendReceiveModel)(dataInputStream.readObject());
+        }
+    };
 
 
+    public void refreshMessageList()
+    {
+        String allText="";
+        for(messageModel m: AllLists.THE_MESSAGE_LIST)
+        {
 
-                            if(receivedMessage.getType()==1)
-                            {
-                                AllLists.THE_MESSAGE_LIST.add(receivedMessage.getMessage());
-                                msgLog+="mesaj::"+receivedMessage.getMessage().getMessage();
-                            }
-
-
-                            MainActivity.this.runOnUiThread(new Runnable() {
-
-                                @Override
-                                public void run() {
-                                    txtServerLog.setText(msgLog);
-                                }
-                            });
-
-                            receivedMessage=null;
-                        }
-
-
-                    Log.i("ARADA::","KALDIM");
-
-                    if(msgToSend!=null){
-
-                        Log.i("MESSAGE::","SENDING");
-
-                        dataOutputStream.writeObject(msgToSend);
-                        dataOutputStream.flush();
-                        msgToSend = null;
-
-                    }
-                }
-
-            } catch (UnknownHostException e) {
-                e.printStackTrace();
-                final String eString = e.toString();
-                MainActivity.this.runOnUiThread(new Runnable() {
-
-                    @Override
-                    public void run() {
-                        Toast.makeText(MainActivity.this, eString, Toast.LENGTH_LONG).show();
-                    }
-
-                });
-            } catch (IOException e) {
-                e.printStackTrace();
-                final String eString = e.toString();
-                MainActivity.this.runOnUiThread(new Runnable() {
-
-                    @Override
-                    public void run() {
-                        Toast.makeText(MainActivity.this,"IOEXCEPTION:"+ eString, Toast.LENGTH_LONG).show();
-                    }
-
-                });
-            } catch (ClassNotFoundException e) {
-                e.printStackTrace();
-            } finally {
-                if (socket != null) {
-                    try {
-
-
-                        Log.i("SOCKET::","closing");
-                        socket.close();
-                    } catch (IOException e) {
-                        // TODO Auto-generated catch block
-                        e.printStackTrace();
-                    }
-                }
-
-                if (dataOutputStream != null) {
-
-                    Log.i("SOCKET2::","closing");
-
-                    try {
-                        dataOutputStream.close();
-                    } catch (IOException e) {
-                        // TODO Auto-generated catch block
-                        e.printStackTrace();
-                    }
-                }
-
-                if (dataInputStream != null) {
-
-
-                    Log.i("SOCKET3::","closing");
-                    try {
-                        dataInputStream.close();
-                    } catch (IOException e) {
-                        // TODO Auto-generated catch block
-                        e.printStackTrace();
-                    }
-                }
-
-
+            if(m.isThisMe())
+            {
+                allText+="\nMe::"+m.getMessage();
+            }
+            else
+            {
+                allText+="\nEnemy::"+m.getMessage();
             }
 
         }
 
-        private void sendMsg(GenericSendReceiveModel msg){
-            msgToSend = msg;
-        }
 
-        private void disconnect(){
-            goOut = true;
-        }
+        txtServerLog.setText(allText);
     }
-
-    //----SERVER
-    private class ChatServerThread extends Thread {
-
-        @Override
-        public void run() {
-            Socket socket = null;
-
-            try {
-                serverSocket = new ServerSocket(Integer.parseInt(PORT));
-                MainActivity.this.runOnUiThread(new Runnable() {
-
-                    @Override
-                    public void run() {
-                        // infoPort.setText("I'm waiting here: "
-                        //  + serverSocket.getLocalPort());
-                    }
-                });
-
-                while (true) {
-                    socket = serverSocket.accept();
-                    ChatClient client = new ChatClient();
-                    userList.add(client);
-
-                    MainActivity.this.runOnUiThread(new Runnable() {
-
-                        @Override
-                        public void run() {
-                            connectionModeOn(true);
-                        }
-
-                    });
-                    connectThread = new ConnectThread(client, socket);
-                    connectThread.start();
-
-
-
-
-                }
-
-            } catch (IOException e) {
-                e.printStackTrace();
-            } finally {
-                if (socket != null) {
-                    try {
-                        socket.close();
-                    } catch (IOException e) {
-                        // TODO Auto-generated catch block
-                        e.printStackTrace();
-                    }
-                }
-            }
-
-        }
-
-    }
-
-    //____Guest_
-    private class ConnectThread extends Thread {
-
-        Socket socket;
-        ChatClient connectClient;
-
-
-        GenericSendReceiveModel msgToSend = null;
-        GenericSendReceiveModel receivedMessage = null;
-
-        ConnectThread(ChatClient client, Socket socket){
-            connectClient = client;
-            this.socket= socket;
-            client.socket = socket;
-            client.chatThread = this;
-        }
-
-        @Override
-        public void run() {
-            ObjectInputStream dataInputStream = null;
-            ObjectOutputStream dataOutputStream = null;
-
-            try {
-                socket.setReceiveBufferSize(50000);
-            } catch (SocketException e) {
-                e.printStackTrace();
-            }
-
-            try {
-                dataInputStream = new ObjectInputStream(socket.getInputStream());
-                dataOutputStream = new ObjectOutputStream(socket.getOutputStream());
-
-
-                GenericSendReceiveModel n = (GenericSendReceiveModel) dataInputStream.readObject();
-
-                connectClient.name = n.getMessage().getUsername();
-
-                msgLog += connectClient.name + " connected@" +
-                        connectClient.socket.getInetAddress() +
-                        ":" + connectClient.socket.getPort() + "\n";
-                MainActivity.this.runOnUiThread(new Runnable() {
-
-                    @Override
-                    public void run() {
-                        txtServerLog.setText(msgLog);
-                    }
-                });
-
-
-                messageModel newMessage=new messageModel();
-                newMessage.setMessage(""+n.getMessage().getUsername()+ "join chat.");
-                newMessage.setUsername("Server:");
-
-                GenericSendReceiveModel genNew=new GenericSendReceiveModel();
-                genNew.setType(1);
-                genNew.setMessage(newMessage);
-
-
-
-                dataOutputStream.writeObject(genNew);
-                dataOutputStream.flush();
-
-
-                //Dikkat dataoutputstream'i birden fazla yaratırsak  streamcorruptedexception veriri
-                ConnectedSenderThread = new SenderThread(socket,dataOutputStream);
-                ConnectedSenderThread.start();
-
-                while (true) {
-
-                    Log.i("SERVER::","WROKING");
-                    try {
-
-
-
-
-
-                        if ((receivedMessage=(GenericSendReceiveModel)(dataInputStream.readObject())) != null) {
-                      //  if (dataInputStream.available()>0){
-
-                            Log.i("MESSAGE::","RECEIVING");
-
-                           // receivedMessage=(GenericSendReceiveModel)(dataInputStream.readObject());
-
-                            if(receivedMessage.getType()==1)
-                            {
-                                AllLists.THE_MESSAGE_LIST.add(receivedMessage.getMessage());
-                                msgLog+="mesaj::"+receivedMessage.getMessage().getMessage();
-                            }
-
-
-                            MainActivity.this.runOnUiThread(new Runnable() {
-
-                                @Override
-                                public void run() {
-                                    txtServerLog.setText(msgLog);
-                                }
-                            });
-
-                            receivedMessage=null;
-                        }
-                    }catch (Exception e)
-                    {
-                        e.printStackTrace();
-                    }
-
-                    Log.i("ARADA::","KALDIM");
-
-                    if(msgToSend!=null){
-
-                        Log.i("MESSAGE::","SENDING");
-
-                        dataOutputStream.writeObject(msgToSend);
-                        dataOutputStream.flush();
-                        msgToSend = null;
-
-                    }
-
-                }
-
-            } catch (IOException e) {
-                e.printStackTrace();
-            } catch (ClassNotFoundException e) {
-                e.printStackTrace();
-            } finally {
-
-                Log.i("SOCKET::","closing");
-
-                if (dataInputStream != null) {
-
-                    Log.i("SOCKET2::","closing");
-
-                    try {
-                        dataInputStream.close();
-                    } catch (IOException e) {
-                        // TODO Auto-generated catch block
-                        e.printStackTrace();
-                    }
-                }
-
-                if (dataOutputStream != null) {
-                    try {
-                        dataOutputStream.close();
-                    } catch (IOException e) {
-                        // TODO Auto-generated catch block
-                        e.printStackTrace();
-                    }
-                }
-
-                userList.remove(connectClient);
-                MainActivity.this.runOnUiThread(new Runnable() {
-
-                    @Override
-                    public void run() {
-                        Toast.makeText(MainActivity.this,
-                                connectClient.name + " removed.", Toast.LENGTH_LONG).show();
-
-                        msgLog += "-- " + connectClient.name + " leaved\n";
-                        MainActivity.this.runOnUiThread(new Runnable() {
-
-                            @Override
-                            public void run() {
-                                txtServerLog.setText(msgLog);
-                            }
-                        });
-
-                        // broadcastMsg("-- " + connectClient.name + " leaved\n");
-                    }
-                });
-            }
-
-        }
-
-        private void sendMsg(GenericSendReceiveModel msg){
-            msgToSend = msg;
-        }
-
-    }
-
-
-
-
-
-
-    private class SenderThread extends Thread {
-
-        Socket socket;
-        GenericSendReceiveModel msgToSend = null;
-        ObjectOutputStream dataOutputStream = null;
-
-        SenderThread(Socket socket,ObjectOutputStream data){
-            this.socket= socket;
-            this.dataOutputStream=data;
-        }
-
-        @Override
-        public void run() {
-
-
-            try {
-
-              //  dataOutputStream = new ObjectOutputStream(socket.getOutputStream());
-
-                while (true) {
-
-                    if(msgToSend!=null){
-                        Log.i("MESSAGESENDERNEWW::","SENDING");
-                        dataOutputStream.writeObject(msgToSend);
-                        dataOutputStream.flush();
-                        msgToSend = null;
-
-                    }
-
-                }
-
-            } catch (IOException e) {
-                e.printStackTrace();
-            } finally {
-
-                if (dataOutputStream != null) {
-                    try {
-                        dataOutputStream.close();
-                    } catch (IOException e) {
-                        // TODO Auto-generated catch block
-                        e.printStackTrace();
-                    }
-                }
-
-
-            }
-
-        }
-
-        private void sendMsg(GenericSendReceiveModel msg){
-            msgToSend = msg;
-        }
-
-    }
-
-
-
-
-
-
-    private void broadcastMsg(String msg){
-
-
-        messageModel newMessage=new messageModel();
-        newMessage.setMessage(msg);
-        newMessage.setUsername("Server:");
-
-        GenericSendReceiveModel genNew=new GenericSendReceiveModel();
-        genNew.setType(1);
-        genNew.setMessage(newMessage);
-
-
-        for(int i=0; i<userList.size(); i++){
-            userList.get(i).chatThread.sendMsg(genNew);
-            msgLog += "- send to " + userList.get(i).name + "\n";
-        }
-
-        MainActivity.this.runOnUiThread(new Runnable() {
-
-            @Override
-            public void run() {
-                txtServerLog.setText(msgLog);
-            }
-        });
-    }
-
-
-
-
-    class ChatClient {
-        String name;
-        Socket socket;
-        ConnectThread chatThread;
-
-    }
-
 
 }
