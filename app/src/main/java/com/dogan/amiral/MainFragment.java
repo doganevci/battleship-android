@@ -95,6 +95,11 @@ public class MainFragment extends Fragment {
                 chatClientThread = new ReceiverClientThread("Clint Dogan:",ipTxt.getText().toString(),Integer.parseInt(PORT),getActivity());
                 chatClientThread.start();
 
+                btnConnectToFriend.setText("Connecting, please wait!");
+
+
+                btnBeServer.setVisibility(View.GONE);
+
             }
         });
 
@@ -108,6 +113,11 @@ public class MainFragment extends Fragment {
                 Log.i("Waiting::","waiting request from a friend");
                 chatServerThread = new ReceiverServerThread(getActivity());
                 chatServerThread.start();
+
+
+                btnBeServer.setText("Connecting, please wait!");
+                btnConnectToFriend.setVisibility(View.GONE);
+                ipTxt.setVisibility(View.GONE);
             }
         });
 

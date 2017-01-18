@@ -275,7 +275,7 @@ public class GameActivity extends AppCompatActivity {
                 int type = intent.getIntExtra("type",0);
                 boolean isFired = intent.getBooleanExtra("isfired",false);
 
-                if(type==1)  // Your line
+                if(type==1)
                 {
                     IS_MY_TURN=false;
 

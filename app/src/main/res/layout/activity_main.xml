@@ -77,7 +77,21 @@
         android:id="@+id/chatView"
         android:orientation="vertical" >
 
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="30dp">
 
+
+            <TextView
+                android:text="Swipe right screen to begin play!"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/txtaa"
+                android:layout_weight="1"
+
+                tools:text="Swipe right screen to begin play!" />
+        </LinearLayout>
 
         <LinearLayout
             android:orientation="horizontal"
