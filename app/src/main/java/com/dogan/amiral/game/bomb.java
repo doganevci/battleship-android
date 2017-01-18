@@ -1,15 +1,42 @@
 package com.dogan.amiral.game;
 
-import java.util.ArrayList;
-
-/**
- * Created by doganevci on 17/01/2017.
- */
+import com.dogan.amiral.game.enums.bombType;
 
 public class bomb {
 
-    int type;
+    public bombType type;
+
+    int sizeOfDamage;
+    int numberOfWeapons;
     String name;
-    int size;
-    int numberOfBombs;
+
+
+    public bomb(bombType TYPE)
+    {
+        type=TYPE;
+        name=TYPE.toString();
+
+        switch (TYPE) {
+            case NORMALFIRE:
+                sizeOfDamage=0;       //means that, fire affect at that point only
+                numberOfWeapons=-1;   // Unlimited :D
+                break;
+            case THEBOMB:
+                sizeOfDamage=1;
+                numberOfWeapons=2;   // Unlimited :D
+                break;
+
+            case HYDROGENBOMB:
+                sizeOfDamage=2;
+                numberOfWeapons=1;
+                break;
+
+            case PROBE:
+                sizeOfDamage=-3;   // minus means not damage only show the area
+                numberOfWeapons=1;
+                break;
+        }
+
+
+    }
 }

@@ -2,8 +2,6 @@ package com.dogan.amiral.Network;
 
 import android.content.Context;
 
-import com.dogan.amiral.MainActivity;
-
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -16,7 +14,7 @@ public class ReceiverServerThread extends Thread {
 
     public static ServerSocket serverSocket;
     public String PORT="65123";
-    public ConnectThread connectThread=null;
+    public ReceiverConnectThread connectThread=null;
     Context cntx;
 
     public ReceiverServerThread(Context cntx){
@@ -37,7 +35,7 @@ public class ReceiverServerThread extends Thread {
 
                 //TODO Connection modu açıldı
 
-                connectThread = new ConnectThread( socket,cntx);
+                connectThread = new ReceiverConnectThread( socket,cntx);
                 connectThread.start();
 
             }
@@ -58,7 +56,7 @@ public class ReceiverServerThread extends Thread {
     }
 
 
-    public ConnectThread getConnectedThread()
+    public ReceiverConnectThread getConnectedThread()
     {
         return  connectThread;
     }

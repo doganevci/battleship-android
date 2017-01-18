@@ -17,20 +17,9 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import android.widget.GridView;
-import android.widget.ListAdapter;
 import android.widget.TextView;
 
-import com.dogan.amiral.game.ship;
-import com.felipecsl.asymmetricgridview.library.Utils;
-import com.felipecsl.asymmetricgridview.library.model.AsymmetricItem;
-import com.felipecsl.asymmetricgridview.library.widget.AsymmetricGridView;
-import com.felipecsl.asymmetricgridview.library.widget.AsymmetricGridViewAdapter;
-
-import java.util.ArrayList;
-import java.util.List;
-
 import static com.dogan.amiral.models.AllLists.THE_MY_BOARD;
-import static com.dogan.amiral.models.AllLists.THE_SHIP_LIST;
 
 public class GameActivity extends AppCompatActivity {
 
@@ -65,14 +54,7 @@ public class GameActivity extends AppCompatActivity {
         mViewPager.setAdapter(mSectionsPagerAdapter);
 
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });
+
 
     }
 
@@ -181,7 +163,7 @@ public class GameActivity extends AppCompatActivity {
 
             if(position==0)
             {
-                MainActivity fragment = new MainActivity();
+                MainFragment fragment = new MainFragment();
                 Bundle args = new Bundle();
             //    args.putInt(ARG_SECTION_NUMBER, sectionNumber);
                 fragment.setArguments(args);

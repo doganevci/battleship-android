@@ -14,9 +14,7 @@ import com.dogan.amiral.game.ship;
 import static com.dogan.amiral.models.AllLists.THE_MY_BOARD;
 import static com.dogan.amiral.models.AllLists.THE_SHIP_LIST;
 
-/**
- * Created by doganevci on 12/06/16.
- */
+
 public class ImageAdapter extends BaseAdapter {
     private Context mContext;
 
@@ -57,7 +55,7 @@ public class ImageAdapter extends BaseAdapter {
             imageView.setBackgroundColor(Color.RED);
         }
         else
-        { imageView.setBackgroundColor(Color.GRAY);
+        { imageView.setBackgroundColor(Color.BLUE);
 
         }
 

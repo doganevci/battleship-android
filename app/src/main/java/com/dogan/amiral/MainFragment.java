@@ -9,13 +9,19 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.LinearLayout;
+import android.widget.ListView;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
+import com.dogan.amiral.MessagerModule.DiscussArrayAdapter;
+import com.dogan.amiral.MessagerModule.OneComment;
 import com.dogan.amiral.Network.ReceiverClientThread;
 import com.dogan.amiral.Network.ReceiverServerThread;
 import com.dogan.amiral.models.AllLists;
@@ -27,7 +33,7 @@ import java.net.NetworkInterface;
 import java.util.Collections;
 import java.util.List;
 
-public class MainActivity extends Fragment {
+public class MainFragment extends Fragment {
 
     EditText ipTxt;
     EditText txtMessageSend;
@@ -38,6 +44,11 @@ public class MainActivity extends Fragment {
     Button btnBeServer;
     Button btnMessageSend;
     Button btnConnectToFriend;
+
+
+    LinearLayout chatView;
+    private ListView lv;
+    private DiscussArrayAdapter adapter;
 
 
 
@@ -63,7 +74,7 @@ public class MainActivity extends Fragment {
         btnConnectToFriend = (Button) rootView.findViewById(R.id.button);
         txtServerLog = (TextView)rootView. findViewById(R.id.txtServerLog);
 
-
+        chatView=(LinearLayout)rootView.findViewById(R.id.chatView);
 
         LocalBroadcastManager.getInstance(getActivity()).registerReceiver(mMessageReceiver,
                 new IntentFilter("custom-event-name"));
@@ -108,6 +119,16 @@ public class MainActivity extends Fragment {
         });
 
 
+
+
+
+
+
+        lv = (ListView)rootView.findViewById(R.id.listView1);
+        adapter = new DiscussArrayAdapter(getActivity(), R.layout.listitem_discuss);
+        lv.setAdapter(adapter);
+
+
         return rootView;
     }
 
@@ -150,6 +171,8 @@ public class MainActivity extends Fragment {
         }
 
         AllLists.THE_MESSAGE_LIST.add(genNew.getMessage());
+
+
         refreshMessageList();
 
     }
@@ -168,7 +191,7 @@ public class MainActivity extends Fragment {
             ipTxt.setVisibility(View.GONE);
             btnConnectToFriend.setVisibility(View.GONE);
             txtYourIp.setVisibility(View.GONE);
-
+            chatView.setVisibility(View.VISIBLE);
         }
         else
         {
@@ -179,6 +202,7 @@ public class MainActivity extends Fragment {
             ipTxt.setVisibility(View.VISIBLE);
             btnConnectToFriend.setVisibility(View.VISIBLE);
             txtYourIp.setVisibility(View.VISIBLE);
+            chatView.setVisibility(View.GONE);
         }
 
     }
@@ -238,23 +262,25 @@ public class MainActivity extends Fragment {
 
     public void refreshMessageList()
     {
+        adapter.clear();
+
+
         String allText="";
-        for(messageModel m: AllLists.THE_MESSAGE_LIST)
+      /*  for(messageModel m: AllLists.THE_MESSAGE_LIST)
         {
 
-            if(!m.isThisMe())
-            {
-                allText+="\nMe::"+m.getMessage();
-            }
-            else
-            {
-                allText+="\nEnemy::"+m.getMessage();
-            }
+            adapter.add(new OneComment(m.isThisMe(), m.getMessage()));
 
         }
+        */
+        messageModel m= AllLists.THE_MESSAGE_LIST.get(AllLists.THE_MESSAGE_LIST.size()-1);
+        adapter.add(new OneComment(m.isThisMe(), m.getMessage()));
 
 
-        txtServerLog.setText(allText);
     }
+
+
+
+
 
 }

@@ -4,9 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
-import android.widget.Toast;
 
-import com.dogan.amiral.MainActivity;
 import com.dogan.amiral.models.AllLists;
 import com.dogan.amiral.models.GenericSendReceiveModel;
 import com.dogan.amiral.models.messageModel;
@@ -20,7 +18,7 @@ import java.net.SocketException;
 /**
  * Created by doganevci on 17/01/2017.
  */
-public class ConnectThread extends Thread {
+public class ReceiverConnectThread extends Thread {
 
     Socket socket;
     Context cntx;
@@ -29,7 +27,7 @@ public class ConnectThread extends Thread {
     GenericSendReceiveModel receivedMessage = null;
     SenderThread  ConnectedSenderThread=null;
 
-    public ConnectThread( Socket socket,Context cntx){
+    public ReceiverConnectThread(Socket socket, Context cntx){
         this.socket= socket;
     }
 
