@@ -54,7 +54,7 @@ public class ImageAdapter extends BaseAdapter {
             imageView.setBackgroundColor(Color.BLUE);
         }
         else
-        { imageView.setBackgroundColor(Color.RED);
+        { imageView.setBackgroundColor(Color.GREEN);
 
         }
 

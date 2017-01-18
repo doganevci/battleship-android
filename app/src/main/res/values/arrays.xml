@@ -2,20 +2,20 @@
 <resources>
 
     <string-array name="ships">
-        <item>Carrier</item>
-        <item>Battleship</item>
-        <item>Cruisers</item>
-        <item>Submarines</item>
-        <item>Destroyers</item>
+        <item>Carrier x 1 </item>
+        <item>Battleship x 1 </item>
+        <item>Cruisers x 1 </item>
+        <item>Submarines x 2 </item>
+        <item>Destroyers x 2 </item>
     </string-array>
 
 
 
     <string-array name="bombs">
-        <item>Fire</item>
-        <item>Bomb​:</item>
-        <item>H-Bomb</item>
-        <item>Probe​</item>
+        <item>Unlimited Fire</item>
+        <item>Bomb​ x 2 </item>
+        <item>H-Bomb x 1 </item>
+        <item>Probe​  x 1 </item>
     </string-array>
 
 

@@ -31,6 +31,8 @@ public class gameProcess {
     public static ArrayList<Integer> shipToChooseRemain;
     public static ArrayList<Integer> bombToChooseRemain;
 
+    public static  int LAST_AIM_POSITION=-1;
+
     public void ResetGame()
     {
         THE_MY_BOARD= new ArrayList<>();
@@ -47,6 +49,9 @@ public class gameProcess {
         {
             THE_MY_BOARD.add(shipType.NONE);
             THE_ENEMY_BOARD.add(shipType.NONE);
+
+            THE_MY_BOARD_HITS.add(0);
+            THE_ENEMY_BOARD_HITS.add(0);
         }
 
 

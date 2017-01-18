@@ -5,8 +5,10 @@ import android.content.Intent;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
+import com.dogan.amiral.game.enums.shipType;
 import com.dogan.amiral.models.AllLists;
 import com.dogan.amiral.models.GenericSendReceiveModel;
+import com.dogan.amiral.models.MovementModel;
 import com.dogan.amiral.models.messageModel;
 
 import java.io.IOException;
@@ -14,6 +16,12 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.net.SocketException;
+
+import static com.dogan.amiral.GameActivity.chatClientThread;
+import static com.dogan.amiral.GameActivity.chatServerThread;
+import static com.dogan.amiral.game.gameProcess.THE_ENEMY_BOARD_HITS;
+import static com.dogan.amiral.game.gameProcess.THE_MY_BOARD;
+import static com.dogan.amiral.game.gameProcess.THE_MY_BOARD_HITS;
 
 /**
  * Created by doganevci on 17/01/2017.
@@ -91,7 +99,49 @@ public class ReceiverConnectThread extends Thread {
                            //TODO listeyi yenile mesajların
                             sendBroadCast(2);
                         }
+                        if(receivedMessage.getType()==2) // type2 rakipten hamle geldi
+                        {
 
+                            if(receivedMessage.getGameMovement().isApproval())
+                            {
+
+                                if(receivedMessage.getGameMovement().isMyFireHitTheShip())
+                                {
+
+                                    THE_ENEMY_BOARD_HITS.set(receivedMessage.getGameMovement().getCoordinate(),1);
+                                }
+                                else
+                                {
+                                    THE_ENEMY_BOARD_HITS.set(receivedMessage.getGameMovement().getCoordinate(),2);
+                                }
+
+                                sendBroadCastGame(1,receivedMessage.getGameMovement().isMyFireHitTheShip());
+
+                            }
+                            else
+                            {
+                                if(THE_MY_BOARD.get(receivedMessage.getGameMovement().getCoordinate())!= shipType.NONE)
+                                {
+                                    THE_MY_BOARD_HITS.set(receivedMessage.getGameMovement().getCoordinate(),1);
+                                    sendFireApprovel(receivedMessage.getGameMovement(),true);
+
+                                    sendBroadCastGame(2,true);
+                                }
+                                else
+                                {
+                                    sendFireApprovel(receivedMessage.getGameMovement(),false);
+
+                                    sendBroadCastGame(2,false);
+                                }
+
+
+
+                            }
+
+
+
+
+                        }
 
 
                         receivedMessage=null;
@@ -151,11 +201,52 @@ public class ReceiverConnectThread extends Thread {
     }
 
 
+    public void sendFireApprovel(MovementModel mm,boolean isHit)
+    {
+
+
+
+        mm.setApproval(true);
+
+        mm.setMyFireHitTheShip(isHit);
+
+
+
+
+        GenericSendReceiveModel genNew=new GenericSendReceiveModel();
+        genNew.setType(2);
+        genNew.setGameMovement(mm);
+
+
+
+        if(chatClientThread==null){
+
+
+            chatServerThread.getConnectedThread().getSenderThread().sendMsg(genNew);
+
+        }
+        else
+        {
+            chatClientThread.getSenderThread().sendMsg(genNew);
+        }
+
+        AllLists.THE_MESSAGE_LIST.add(genNew.getMessage());
+    }
+
+
     private void sendBroadCast(int type) {
         Log.d("sender", "Broadcasting message");
         Intent intent = new Intent("custom-event-name");
         // You can also include some extra data.
         intent.putExtra("type", type);
+        LocalBroadcastManager.getInstance(cntx).sendBroadcast(intent);
+    }
+
+    private void sendBroadCastGame(int type,boolean isFired) {
+        Log.d("sender", "Broadcasting game");
+        Intent intent = new Intent("mGameNotifReceiver");
+        intent.putExtra("type", type);
+        intent.putExtra("isfire", isFired);
         LocalBroadcastManager.getInstance(cntx).sendBroadcast(intent);
     }
 

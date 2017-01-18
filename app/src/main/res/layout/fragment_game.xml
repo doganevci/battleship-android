@@ -16,15 +16,27 @@
 
 
     <GridView
+    android:layout_width="wrap_content"
+    android:layout_height="300dp"
+    android:layout_margin="0dp"
+    android:numColumns="15"
+        android:visibility="gone"
+    android:horizontalSpacing="0dp"
+    android:verticalSpacing="1dp"
+
+    android:id="@+id/gridView" />
+
+    <GridView
         android:layout_width="wrap_content"
         android:layout_height="300dp"
         android:layout_margin="0dp"
         android:numColumns="15"
 
+        android:visibility="gone"
         android:horizontalSpacing="0dp"
         android:verticalSpacing="1dp"
 
-        android:id="@+id/gridView" />
+        android:id="@+id/gridViewEnemy" />
 
     <LinearLayout
         android:orientation="vertical"

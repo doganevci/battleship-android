@@ -1,10 +1,9 @@
 package com.dogan.amiral.models;
 
-/**
- * Created by doganevci on 17/01/2017.
- */
 
-public class MovementModel {
+import java.io.Serializable;
+
+public class MovementModel implements Serializable {
 
     boolean Approval;
     boolean isMyFireHitTheShip;

@@ -7,15 +7,18 @@ import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.GridView;
 import android.widget.ImageView;
+import android.widget.Toast;
 
 
-import com.dogan.amiral.game.enums.shipType;
 
-import static com.dogan.amiral.game.gameProcess.THE_MY_BOARD;
+import static com.dogan.amiral.game.gameProcess.LAST_AIM_POSITION;
+import static com.dogan.amiral.game.gameProcess.THE_ENEMY_BOARD_HITS;
+
 
 
 public class ImageEnemyAdapter extends BaseAdapter {
     private Context mContext;
+    View lastview;
 
     public ImageEnemyAdapter(Context c) {
         mContext = c;
@@ -47,7 +50,47 @@ public class ImageEnemyAdapter extends BaseAdapter {
             imageView = (ImageView) convertView;
         }
 
-        imageView.setBackgroundColor(Color.BLUE);
+
+        if(THE_ENEMY_BOARD_HITS.get(position)==1)
+        {
+            imageView.setBackgroundColor(Color.BLACK);
+        }
+        else if(THE_ENEMY_BOARD_HITS.get(position)==2)  // hit but not damage
+        {
+            imageView.setBackgroundColor(Color.LTGRAY);
+        }
+        else if(THE_ENEMY_BOARD_HITS.get(position)==3)  // probe area
+        {
+            imageView.setBackgroundColor(Color.GREEN);
+        }
+        else if(LAST_AIM_POSITION!=-1 && position==LAST_AIM_POSITION)
+        {
+            imageView.setBackgroundColor(Color.RED);
+        }
+        else
+        {
+            imageView.setBackgroundColor(Color.BLUE);
+        }
+
+
+        imageView.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View view) {
+
+                Toast.makeText(mContext, "clicked", Toast.LENGTH_SHORT).show();
+                
+                LAST_AIM_POSITION=position;
+
+                if(lastview!=null)
+                lastview.setBackgroundColor(Color.BLUE);
+                view.setBackgroundColor(Color.RED);
+
+                lastview=view;
+
+                return false;
+            }
+        });
+
 
         return imageView;
     }

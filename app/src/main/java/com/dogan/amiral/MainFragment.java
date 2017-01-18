@@ -33,6 +33,10 @@ import java.net.NetworkInterface;
 import java.util.Collections;
 import java.util.List;
 
+import static com.dogan.amiral.GameActivity.PORT;
+import static com.dogan.amiral.GameActivity.chatClientThread;
+import static com.dogan.amiral.GameActivity.chatServerThread;
+
 public class MainFragment extends Fragment {
 
     EditText ipTxt;
@@ -53,11 +57,9 @@ public class MainFragment extends Fragment {
 
 
     boolean isConnected=false;
-    boolean isServer=false;
 
-    public String PORT=GENERALPROPERTIES.PORT;
-    ReceiverClientThread chatClientThread = null;
-    ReceiverServerThread chatServerThread=null;
+
+
 
 
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
