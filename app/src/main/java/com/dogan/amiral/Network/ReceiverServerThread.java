@@ -2,6 +2,8 @@ package com.dogan.amiral.Network;
 
 import android.content.Context;
 
+import com.dogan.amiral.GENERALPROPERTIES;
+
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -13,7 +15,7 @@ import java.net.Socket;
 public class ReceiverServerThread extends Thread {
 
     public static ServerSocket serverSocket;
-    public String PORT="65123";
+    public String PORT= GENERALPROPERTIES.PORT;
     public ReceiverConnectThread connectThread=null;
     Context cntx;
 

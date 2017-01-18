@@ -55,7 +55,7 @@ public class MainFragment extends Fragment {
     boolean isConnected=false;
     boolean isServer=false;
 
-    public String PORT="65123";
+    public String PORT=GENERALPROPERTIES.PORT;
     ReceiverClientThread chatClientThread = null;
     ReceiverServerThread chatServerThread=null;
 
@@ -134,9 +134,6 @@ public class MainFragment extends Fragment {
 
 
 
-
-
-
     public void sendMessage(String messageText)
     {
         //THE_MESSAGE_LIST.
@@ -169,6 +166,8 @@ public class MainFragment extends Fragment {
         {
             chatClientThread.getSenderThread().sendMsg(genNew);
         }
+
+        genNew.getMessage().setThisMe(false);
 
         AllLists.THE_MESSAGE_LIST.add(genNew.getMessage());
 
@@ -252,7 +251,6 @@ public class MainFragment extends Fragment {
             {
                 refreshMessageList();
             }
-
 
 
 
