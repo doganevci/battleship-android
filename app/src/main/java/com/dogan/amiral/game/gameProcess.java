@@ -14,9 +14,7 @@ import static com.dogan.amiral.game.enums.shipType.DESTROYERS;
 import static com.dogan.amiral.game.enums.shipType.NONE;
 import static com.dogan.amiral.game.enums.shipType.SUBMARINES;
 
-/**
- * Created by doganevci on 18/01/2017.
- */
+
 
 public class gameProcess {
 
@@ -32,6 +30,8 @@ public class gameProcess {
     public static ArrayList<Integer> bombToChooseRemain;
 
     public static  int LAST_AIM_POSITION=-1;
+
+    public static  boolean IS_MY_TURN=false;
 
     public void ResetGame()
     {
@@ -108,7 +108,7 @@ public class gameProcess {
         ArrayList<Integer> coordinates=null;
 
 
-        int tryCnt=10;
+        int tryCnt=50;
         while (coordinates==null)
         {
             coordinates=  getRondomCoordinateForShip(typeShip);

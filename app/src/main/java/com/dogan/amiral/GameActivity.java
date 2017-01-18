@@ -41,6 +41,7 @@ import com.dogan.amiral.models.MovementModel;
 import com.dogan.amiral.models.messageModel;
 
 
+import static com.dogan.amiral.game.gameProcess.IS_MY_TURN;
 import static com.dogan.amiral.game.gameProcess.LAST_AIM_POSITION;
 import static com.dogan.amiral.game.gameProcess.THE_ENEMY_BOARD_HITS;
 
@@ -49,7 +50,7 @@ public class GameActivity extends AppCompatActivity {
 
 
     private SectionsPagerAdapter mSectionsPagerAdapter;
-    private ViewPager mViewPager;
+    public static ViewPager mViewPager;
 
 
     public static String PORT=GENERALPROPERTIES.PORT;
@@ -158,7 +159,16 @@ public class GameActivity extends AppCompatActivity {
                             layoutShipper.setVisibility(View.GONE);
                             layoutStartGame.setVisibility(View.GONE);
 
-                            Toast.makeText(getActivity(), "Game has begun!", Toast.LENGTH_SHORT).show();
+
+                            if( IS_MY_TURN)
+                            {
+                                Toast.makeText(getActivity(), "Game has begun! First move is yours.", Toast.LENGTH_SHORT).show();
+                            }
+                            else
+                            {
+                                Toast.makeText(getActivity(), "Game has begun!Enemy will do the first move!", Toast.LENGTH_SHORT).show();
+                            }
+
                         }
                         else
                         {
@@ -217,9 +227,16 @@ public class GameActivity extends AppCompatActivity {
                     public void onClick(View view) {
 
 
+                if(IS_MY_TURN)
+                {
+                    sendFire(LAST_AIM_POSITION,1);
+                }
+                        else
+                {
+                    Toast.makeText(getActivity(), "Wait for the Enemy. its his turn now!", Toast.LENGTH_SHORT).show();
+                }
 
 
-                        sendFire(LAST_AIM_POSITION,1);
 
                     }
                 });
@@ -252,11 +269,16 @@ public class GameActivity extends AppCompatActivity {
             public void onReceive(Context context, Intent intent) {
 
 
+                IS_MY_TURN=true;
+
+
                 int type = intent.getIntExtra("type",0);
                 boolean isFired = intent.getBooleanExtra("isfired",false);
 
                 if(type==1)  // Your line
                 {
+                    IS_MY_TURN=false;
+
                    if(isFired)
                    {
                        Toast.makeText(getActivity(), "Successfull attemp, you got fired a ship!", Toast.LENGTH_SHORT).show();
@@ -265,6 +287,8 @@ public class GameActivity extends AppCompatActivity {
                    {
                        Toast.makeText(getActivity(), "You have failed about your fire attempt!", Toast.LENGTH_SHORT).show();
                    }
+
+                    mViewPager.setCurrentItem(2);
                 }
                 else if(type == 2)
                 {
@@ -273,12 +297,16 @@ public class GameActivity extends AppCompatActivity {
                     if(isFired)
                     {
                         Toast.makeText(getActivity(), "Got Fired !! Alarm!!", Toast.LENGTH_SHORT).show();
+                        IS_MY_TURN=true;
                     }
                     else
                     {
+                        IS_MY_TURN=true;
                         Toast.makeText(getActivity(), "So close, now its your turn mate!", Toast.LENGTH_SHORT).show();
                     }
 
+
+                    mViewPager.setCurrentItem(1);
                 }
                 
                 

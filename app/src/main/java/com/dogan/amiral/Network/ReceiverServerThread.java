@@ -3,6 +3,7 @@ package com.dogan.amiral.Network;
 import android.content.Context;
 
 import com.dogan.amiral.GENERALPROPERTIES;
+import com.dogan.amiral.game.gameProcess;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -36,6 +37,8 @@ public class ReceiverServerThread extends Thread {
                 socket = serverSocket.accept();
 
                 //TODO Connection modu açıldı
+
+                gameProcess.IS_MY_TURN=true;
 
                 connectThread = new ReceiverConnectThread( socket,cntx);
                 connectThread.start();

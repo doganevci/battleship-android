@@ -11,7 +11,9 @@ import android.widget.ImageView;
 
 import com.dogan.amiral.game.enums.shipType;
 
+import static com.dogan.amiral.game.gameProcess.THE_ENEMY_BOARD_HITS;
 import static com.dogan.amiral.game.gameProcess.THE_MY_BOARD;
+import static com.dogan.amiral.game.gameProcess.THE_MY_BOARD_HITS;
 
 
 public class ImageAdapter extends BaseAdapter {
@@ -57,6 +59,17 @@ public class ImageAdapter extends BaseAdapter {
         { imageView.setBackgroundColor(Color.GREEN);
 
         }
+
+
+        if(THE_MY_BOARD_HITS.get(position)==1)
+        {
+            imageView.setBackgroundColor(Color.BLACK);
+        }
+        else if(THE_MY_BOARD_HITS.get(position)==2)  // hit but not damage
+        {
+            imageView.setBackgroundColor(Color.LTGRAY);
+        }
+
 
         return imageView;
 

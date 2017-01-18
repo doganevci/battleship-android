@@ -262,7 +262,7 @@ public class ReceiverClientThread extends Thread {
         Log.d("sender", "Broadcasting game");
         Intent intent = new Intent("mGameNotifReceiver");
         intent.putExtra("type", type);
-        intent.putExtra("isfire", isFired);
+        intent.putExtra("isfired", isFired);
         LocalBroadcastManager.getInstance(cntx).sendBroadcast(intent);
     }
 
