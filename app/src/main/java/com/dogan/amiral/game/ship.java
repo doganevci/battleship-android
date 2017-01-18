@@ -44,6 +44,10 @@ public class ship {
                 size=2;
                 lifeLevel=2;
                 break;
+            case NONE:
+                size=0;
+                lifeLevel=0;
+                break;
         }
 
 

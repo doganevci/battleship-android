@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string-array name="ships">
+        <item>Carrier</item>
+        <item>Battleship</item>
+        <item>Cruisers</item>
+        <item>Submarines</item>
+        <item>Destroyers</item>
+    </string-array>
+
+
+
+    <string-array name="bombs">
+        <item>Fire</item>
+        <item>Bomb​:</item>
+        <item>H-Bomb</item>
+        <item>Probe​</item>
+    </string-array>
+
+
+</resources>

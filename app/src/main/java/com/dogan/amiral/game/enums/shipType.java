@@ -9,5 +9,6 @@ public enum shipType {
     BATTLESHIP,
     CRUISERS,
     SUBMARINES,
-    DESTROYERS
+    DESTROYERS,
+    NONE
 }

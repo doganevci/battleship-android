@@ -14,10 +14,10 @@ import com.dogan.amiral.game.enums.shipType;
 import static com.dogan.amiral.game.gameProcess.THE_MY_BOARD;
 
 
-public class ImageAdapter extends BaseAdapter {
+public class ImageEnemyAdapter extends BaseAdapter {
     private Context mContext;
 
-    public ImageAdapter(Context c) {
+    public ImageEnemyAdapter(Context c) {
         mContext = c;
     }
 
@@ -47,20 +47,9 @@ public class ImageAdapter extends BaseAdapter {
             imageView = (ImageView) convertView;
         }
 
-
-
-        if(THE_MY_BOARD.get(position)== shipType.NONE)
-        {
-            imageView.setBackgroundColor(Color.BLUE);
-        }
-        else
-        { imageView.setBackgroundColor(Color.RED);
-
-        }
+        imageView.setBackgroundColor(Color.BLUE);
 
         return imageView;
-
-
     }
 
 

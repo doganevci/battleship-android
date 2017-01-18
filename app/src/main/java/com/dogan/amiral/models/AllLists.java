@@ -17,9 +17,5 @@ public class AllLists {
     public static ArrayList<ship> THE_SHIP_LIST= new ArrayList<>();
     public static ArrayList<bomb> THE_BOMB_LIST= new ArrayList<>();
 
-    public static ArrayList<Integer> THE_MY_BOARD= new ArrayList<>();
-    public static ArrayList<Integer> THE_MY_BOARD_HITS= new ArrayList<>();
 
-    public static ArrayList<Integer> THE_ENEMY_BOARD= new ArrayList<>();
-    public static ArrayList<Integer> THE_ENEMY_BOARD_HITS= new ArrayList<>();
 }

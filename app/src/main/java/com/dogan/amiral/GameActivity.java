@@ -16,10 +16,23 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 
+import android.widget.Button;
 import android.widget.GridView;
+import android.widget.LinearLayout;
+import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
 
-import static com.dogan.amiral.models.AllLists.THE_MY_BOARD;
+import com.dogan.amiral.game.enums.shipType;
+import com.dogan.amiral.game.gameProcess;
+
+import static com.dogan.amiral.game.enums.shipType.BATTLESHIP;
+import static com.dogan.amiral.game.enums.shipType.CARRIER;
+import static com.dogan.amiral.game.enums.shipType.CRUISERS;
+import static com.dogan.amiral.game.enums.shipType.DESTROYERS;
+import static com.dogan.amiral.game.enums.shipType.NONE;
+import static com.dogan.amiral.game.enums.shipType.SUBMARINES;
+import static com.dogan.amiral.game.gameProcess.THE_MY_BOARD;
 
 public class GameActivity extends AppCompatActivity {
 
@@ -58,6 +71,13 @@ public class GameActivity extends AppCompatActivity {
         private static final String ARG_SECTION_NUMBER = "section_number";
         GridView gridView;
         ImageAdapter theAdapter;
+        ImageEnemyAdapter theEnemyAdapter;
+
+        LinearLayout layoutShipper,layoutStartGame,layoutBomber;
+
+
+        Spinner spinnerShip;
+        Button btnGenerate,btnStartGame,btnFire;
 
         public PlaceholderFragment() {
         }
@@ -79,33 +99,137 @@ public class GameActivity extends AppCompatActivity {
                                  Bundle savedInstanceState) {
             View rootView = inflater.inflate(R.layout.fragment_game, container, false);
             TextView textView = (TextView) rootView.findViewById(R.id.section_label);
-            textView.setText(getString(R.string.section_format, getArguments().getInt(ARG_SECTION_NUMBER)));
+            spinnerShip = (Spinner) rootView.findViewById(R.id.spinnerShip);
+            btnGenerate = (Button) rootView.findViewById(R.id.btnGenerate);
+            btnStartGame= (Button) rootView.findViewById(R.id.btnStartGame);
+            btnFire= (Button) rootView.findViewById(R.id.btnFire);
+
+            layoutShipper = (LinearLayout) rootView.findViewById(R.id.layoutShipper);
+            layoutStartGame = (LinearLayout) rootView.findViewById(R.id.layoutStartGame);
+            layoutBomber = (LinearLayout) rootView.findViewById(R.id.layoutBomber);
 
 
-
-
-            for (int i=0;i<225;i++)
+            if(getArguments().getInt(ARG_SECTION_NUMBER)==2)   //ENEMY Screen
             {
-                THE_MY_BOARD.add(0);
+                textView.setText("My Board");
+                layoutShipper.setVisibility(View.VISIBLE);
+                layoutStartGame.setVisibility(View.VISIBLE);
+
+                btnStartGame.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+
+
+                        boolean canStartGame=true;
+
+                        for (int remain:gameProcess.shipToChooseRemain)
+                        {
+                            if(remain>0)
+                            {
+                                canStartGame=false;
+                                break;
+                            }
+                        }
+
+
+                        if(canStartGame)
+                        {
+                            layoutShipper.setVisibility(View.GONE);
+                            layoutStartGame.setVisibility(View.GONE);
+
+                            Toast.makeText(getActivity(), "Game has begun!", Toast.LENGTH_SHORT).show();
+                        }
+                        else
+                        {
+                            Toast.makeText(getActivity(), "Cant start game, unless you dont put all ships!", Toast.LENGTH_SHORT).show();
+                        }
+
+
+                    }
+                });
+
+
+                btnGenerate.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+
+
+                        if(gameProcess.shipToChooseRemain.get(spinnerShip.getSelectedItemPosition())>0)
+                        {
+                            gameProcess.ADD_SHIP(spinnerShip.getSelectedItemPosition());
+
+                            theAdapter.notifyDataSetChanged();
+
+                            int cnt=gameProcess.shipToChooseRemain.get(spinnerShip.getSelectedItemPosition());
+                            gameProcess.shipToChooseRemain.set(spinnerShip.getSelectedItemPosition(),cnt-1);
+                        }
+                        else
+                        {
+                            Toast.makeText(getActivity(), "Can't choose this type of ship anymore!", Toast.LENGTH_SHORT).show();
+                        }
+                        
+
+                    }
+                });
+
+
+
+
+                gameProcess.PrepareGame();
+
+
+
+
+                THE_MY_BOARD.set(5, shipType.BATTLESHIP);
+                THE_MY_BOARD.set(6,shipType.BATTLESHIP);
+                THE_MY_BOARD.set(7,shipType.BATTLESHIP);
+
+
+                THE_MY_BOARD.set(15,shipType.BATTLESHIP);
+                THE_MY_BOARD.set(16,shipType.BATTLESHIP);
+                THE_MY_BOARD.set(17,shipType.BATTLESHIP);
+                THE_MY_BOARD.set(18,shipType.BATTLESHIP);
+
+                gridView=(GridView)rootView.findViewById(R.id.gridView);
+
+                theAdapter=new ImageAdapter(getActivity());
+                gridView.setAdapter(theAdapter);
+
+
+            }else if(getArguments().getInt(ARG_SECTION_NUMBER)==3)
+            {
+                textView.setText("Enemy's Board");
+
+                layoutBomber.setVisibility(View.VISIBLE);
+
+
+                btnFire.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+
+                    }
+                });
+
+
+
+                gameProcess.PrepareGame();
+
+
+
+
+
+                gridView=(GridView)rootView.findViewById(R.id.gridView);
+
+                theEnemyAdapter=new ImageEnemyAdapter(getActivity());
+                gridView.setAdapter(theEnemyAdapter);
+
+
             }
 
 
 
 
-            THE_MY_BOARD.set(5,1);
-            THE_MY_BOARD.set(6,1);
-            THE_MY_BOARD.set(7,1);
 
-
-            THE_MY_BOARD.set(15,1);
-            THE_MY_BOARD.set(16,1);
-            THE_MY_BOARD.set(17,1);
-            THE_MY_BOARD.set(18,1);
-
-            gridView=(GridView)rootView.findViewById(R.id.gridView);
-
-            theAdapter=new ImageAdapter(getActivity());
-            gridView.setAdapter(theAdapter);
 
 
             return rootView;

@@ -2,9 +2,6 @@ package com.dogan.amiral.models;
 
 import java.io.Serializable;
 
-/**
- * Created by doganevci on 15/01/2017.
- */
 
 public class GenericSendReceiveModel implements Serializable{
 
@@ -12,6 +9,18 @@ public class GenericSendReceiveModel implements Serializable{
 
     int type;
     messageModel message;
+    MovementModel gameMovement;
+
+
+
+    public MovementModel getGameMovement() {
+        return gameMovement;
+    }
+
+    public void setGameMovement(MovementModel gameMovement) {
+        this.gameMovement = gameMovement;
+    }
+
 
     public messageModel getMessage() {
         return message;
